@@ -222,11 +222,19 @@ export async function getListingDetails(id: string, type: 'mechanic' | 'shop') {
 
 import webpush from 'web-push'
 
-webpush.setVapidDetails(
-  'mailto:anthony@example.com',
-  process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY!,
-  process.env.VAPID_PRIVATE_KEY!
-)
+// Initialize VAPID only at runtime, not during build
+let vapidInitialized = false
+function initVapid() {
+  if (vapidInitialized) return
+  if (process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY) {
+    webpush.setVapidDetails(
+      'mailto:anthony@example.com',
+      process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY,
+      process.env.VAPID_PRIVATE_KEY
+    )
+    vapidInitialized = true
+  }
+}
 
 let subscription: webpush.PushSubscription | null = null
 
@@ -243,6 +251,7 @@ export async function unsubscribeUser() {
 }
 
 export async function sendNotification(message: string) {
+  initVapid()
   if (!subscription) {
     console.warn('No subscription found in memory.')
     return { success: false, error: 'No subscription' }
