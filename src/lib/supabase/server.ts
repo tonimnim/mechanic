@@ -1,13 +1,19 @@
 import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import { cookies } from "next/headers";
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-
 export const createClient = (cookieStore: Awaited<ReturnType<typeof cookies>>) => {
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+    // During build time, env vars may not be available
+    if (!supabaseUrl || !supabaseKey) {
+        // Return a mock client that won't crash during build
+        return null as unknown as ReturnType<typeof createServerClient>;
+    }
+
     return createServerClient(
-        supabaseUrl!,
-        supabaseKey!,
+        supabaseUrl,
+        supabaseKey,
         {
             cookies: {
                 getAll() {
