@@ -1,0 +1,272 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// --- USER MANAGEMENT ---
+
+model User {
+  id            String    @id @default(uuid())
+  email         String    @unique
+  phone         String    @unique
+  fullName      String
+  role          String    // 'admin', 'mechanic', 'breakdown', 'client'
+  isVerified    Boolean   @default(false)
+  avatarUrl     String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  // Relations
+  mechanicProfile       MechanicProfile?
+  shopProfile           ShopProfile?
+  vehicles              Vehicle[]              @relation("ClientVehicles")
+  reviewsWritten        Review[]               @relation("WrittenReviews")
+  reviewsReceived       Review[]               @relation("ReceivedReviews")
+  verificationRequests  VerificationRequest[]
+  payments              Payment[]
+  
+  // Chat relations
+  messagesSent    Message[]
+  conversations   Conversation[]   @relation("UserConversations")
+  
+  // Contact history (as client)
+  contactsMade    ContactEvent[]   @relation("ClientContacts")
+}
+
+// --- PAYMENTS ---
+
+model Payment {
+  id                  String    @id @default(uuid())
+  userId              String
+  user                User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  // M-Pesa Details
+  phoneNumber         String    // Customer's M-Pesa phone
+  amount              Int       // KSh
+  mpesaReceiptNumber  String?   // M-Pesa receipt (e.g., "QKJ3ABCD12")
+  merchantRequestId   String?   // Daraja MerchantRequestID
+  checkoutRequestId   String?   // Daraja CheckoutRequestID
+  
+  // Status
+  status              String    @default("pending") // 'pending', 'completed', 'failed', 'cancelled'
+  resultCode          String?   // M-Pesa result code
+  resultDesc          String?   // M-Pesa result description
+  
+  // Link to verification
+  verificationRequestId String?
+  
+  createdAt           DateTime  @default(now())
+  paidAt              DateTime?
+}
+
+model MechanicProfile {
+  id              String   @id @default(uuid())
+  userId          String   @unique
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  // Basic Info
+  businessName    String?  // Optional for individuals
+  bio             String?
+  serviceType     String   @default("mechanic") // 'mechanic' | 'breakdown'
+  specialties     String   // Comma-separated: "Engine,Brakes,Electrical" or "Towing,Battery Jump,Tire Change"
+  yearsExperience Int      @default(0)
+  
+  // Location
+  city            String
+  address         String
+  serviceAreas    String?  // Comma-separated areas they serve
+  serviceRadius   Int      @default(10) // km
+  lat             Float
+  lng             Float
+  
+  // Contact
+  phone           String
+  whatsapp        String?  // If different from phone
+  
+  // Pricing
+  callOutFee      Int      @default(0)   // KSh
+  hourlyRate      Int      @default(0)   // KSh
+  
+  // Availability
+  availability    String   @default("offline") // 'online', 'busy', 'offline'
+  workingHours    String?  // JSON string: {"mon": "08:00-18:00", "tue": "08:00-18:00", ...}
+  
+  // Stats (cached, updated periodically)
+  totalJobs       Int      @default(0)
+  avgRating       Float    @default(0)
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  // Contact history (as mechanic)
+  contactsReceived ContactEvent[]
+  
+  // Service requests
+  serviceRequests  ServiceRequest[]
+}
+
+model ShopProfile {
+  id                  String   @id @default(uuid())
+  userId              String   @unique
+  user                User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  shopName            String
+  description         String?
+  inventoryCategories String   // Comma-separated
+  city                String
+  address             String
+  phone               String
+  lat                 Float
+  lng                 Float
+  
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+}
+
+model Vehicle {
+  id          String @id @default(uuid())
+  ownerId     String
+  owner       User   @relation("ClientVehicles", fields: [ownerId], references: [id], onDelete: Cascade)
+  
+  make        String
+  model       String
+  year        Int
+  plateNumber String?
+  
+  createdAt   DateTime @default(now())
+}
+
+// --- VERIFICATION SYSTEM ---
+
+model VerificationRequest {
+  id            String   @id @default(uuid())
+  userId        String
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  status        String   @default("pending") // 'pending', 'approved', 'rejected'
+  
+  // Documents (URLs from storage)
+  nationalIdUrl String?
+  businessPermitUrl String?
+  certificateUrl    String?
+  
+  // Admin notes
+  adminNotes    String?
+  reviewedBy    String?  // Admin user ID
+  reviewedAt    DateTime?
+  
+  // Verification period
+  verifiedUntil DateTime? // When verification expires
+  planType      String?   // 'basic', 'standard', 'premium'
+  
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+// --- TRUST SYSTEM ---
+
+model Review {
+  id        String   @id @default(uuid())
+  rating    Int      // 1-5
+  comment   String?
+  tags      String?  // Comma-separated: "Quick Response,Professional,Fair Pricing"
+  
+  // Service context
+  serviceRequestId String? // Link to specific service if applicable
+  
+  authorId  String
+  author    User     @relation("WrittenReviews", fields: [authorId], references: [id])
+  
+  targetId  String
+  target    User     @relation("ReceivedReviews", fields: [targetId], references: [id])
+  
+  createdAt DateTime @default(now())
+}
+
+// --- SERVICE REQUESTS (Future: Job tracking) ---
+
+model ServiceRequest {
+  id            String   @id @default(uuid())
+  
+  // Client info (stored for non-registered users too)
+  clientUserId  String?
+  clientName    String
+  clientPhone   String
+  
+  // Mechanic
+  mechanicId    String
+  mechanic      MechanicProfile @relation(fields: [mechanicId], references: [id])
+  
+  // Service details
+  issueDescription String
+  vehicleInfo      String?  // "Toyota Camry 2018" or link to Vehicle
+  
+  // Status tracking
+  status        String   @default("pending") // 'pending', 'accepted', 'in_progress', 'completed', 'cancelled'
+  
+  // Timing
+  requestedAt   DateTime @default(now())
+  acceptedAt    DateTime?
+  completedAt   DateTime?
+  
+  // Pricing
+  quotedAmount  Int?     // KSh
+  finalAmount   Int?     // KSh
+  
+  // Location (where service is needed)
+  lat           Float?
+  lng           Float?
+  locationDescription String?
+  
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+// --- CONTACT HISTORY ---
+
+model ContactEvent {
+  id          String   @id @default(uuid())
+  method      String   // 'call' | 'whatsapp'
+  createdAt   DateTime @default(now())
+  
+  // Client who made contact
+  clientId    String
+  client      User     @relation("ClientContacts", fields: [clientId], references: [id])
+  
+  // Mechanic who was contacted
+  mechanicId  String
+  mechanic    MechanicProfile @relation(fields: [mechanicId], references: [id])
+}
+
+// --- CHAT SYSTEM ---
+
+model Conversation {
+  id            String    @id @default(uuid())
+  subject       String?
+  lastMessageAt DateTime  @default(now())
+  
+  participants  User[]    @relation("UserConversations")
+  messages      Message[]
+}
+
+model Message {
+  id             String       @id @default(uuid())
+  content        String?      // Text content (optional if image-only)
+  imageUrl       String?      // Image URL from Supabase Storage
+  messageType    String       @default("text") // 'text' | 'image'
+  createdAt      DateTime     @default(now())
+  isRead         Boolean      @default(false)
+  
+  senderId       String
+  sender         User         @relation(fields: [senderId], references: [id])
+  
+  conversationId String
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+}

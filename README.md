@@ -1,36 +1,112 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# MechanicFinder Kenya 🔧
+
+Find trusted mechanics and breakdown services across Kenya.
+
+## Features
+
+- **For Drivers**: Search verified mechanics by location, specialty, read reviews
+- **For Mechanics**: Get verified, manage profile, receive client inquiries
+- **Admin Dashboard**: Manage verifications, view analytics, monitor platform
+
+## Tech Stack
+
+- **Framework**: Next.js 16 (App Router)
+- **Database**: Prisma with SQLite (dev) / PostgreSQL (production)
+- **Auth**: Supabase Authentication
+- **Payments**: M-Pesa Daraja API (STK Push)
+- **UI**: Tailwind CSS + shadcn/ui
+- **Deployment**: Vercel (recommended)
 
 ## Getting Started
 
-First, run the development server:
+### Prerequisites
+
+- Node.js 18+
+- npm or yarn
+
+### Installation
 
 ```bash
+# Clone the repository
+git clone https://github.com/your-username/mechanic.git
+cd mechanic
+
+# Install dependencies
+npm install
+
+# Copy environment variables
+cp .env.example .env
+
+# Edit .env with your credentials
+# See .env.example for required variables
+
+# Generate Prisma client
+npx prisma generate
+
+# Run database migrations
+npx prisma migrate dev
+
+# Seed the database (optional)
+npx prisma db seed
+
+# Start development server
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### Environment Variables
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+See `.env.example` for all required variables:
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+| Variable | Description |
+|----------|-------------|
+| `DATABASE_URL` | Database connection string |
+| `NEXT_PUBLIC_SUPABASE_URL` | Supabase project URL |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase anonymous key |
+| `MPESA_CONSUMER_KEY` | Daraja API consumer key |
+| `MPESA_CONSUMER_SECRET` | Daraja API consumer secret |
+| `MPESA_PASSKEY` | Lipa Na M-Pesa passkey |
+| `MPESA_SHORTCODE` | Your Till Number |
+| `MPESA_CALLBACK_URL` | Public URL for M-Pesa callbacks |
+| `MPESA_ENV` | `sandbox` or `production` |
 
-## Learn More
+## Deployment
 
-To learn more about Next.js, take a look at the following resources:
+### Vercel (Recommended)
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+1. Push to GitHub
+2. Import to Vercel
+3. Add environment variables
+4. Deploy
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+For M-Pesa callbacks, use your Vercel domain:
+```
+MPESA_CALLBACK_URL=https://your-app.vercel.app/api/mpesa/callback
+```
 
-## Deploy on Vercel
+### Database for Production
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+Switch from SQLite to PostgreSQL:
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+1. Update `DATABASE_URL` in `.env`
+2. Update `prisma/schema.prisma`:
+   ```prisma
+   datasource db {
+     provider = "postgresql"
+     url      = env("DATABASE_URL")
+   }
+   ```
+3. Run `npx prisma migrate deploy`
+
+## Admin Setup
+
+After deployment, create an admin user:
+
+```bash
+npx ts-node scripts/create-admin.ts
+```
+
+Then create the matching user in Supabase Auth with the same email.
+
+## License
+
+MIT
