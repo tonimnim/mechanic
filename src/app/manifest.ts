@@ -11,14 +11,9 @@ export default function manifest(): MetadataRoute.Manifest {
     theme_color: '#2563eb', // Blue-600
     icons: [
       {
-        src: 'https://api.dicebear.com/7.x/icons/png?seed=Mechanic&scale=100&size=192', // Placeholder icon
-        sizes: '192x192',
-        type: 'image/png',
-      },
-      {
-        src: 'https://api.dicebear.com/7.x/icons/png?seed=Mechanic&scale=100&size=512', // Placeholder icon
-        sizes: '512x512',
-        type: 'image/png',
+        src: '/logo.svg',
+        sizes: 'any',
+        type: 'image/svg+xml',
       },
     ],
   }
