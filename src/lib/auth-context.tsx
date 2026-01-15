@@ -62,8 +62,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
 
         if (profile) {
-          // @ts-ignore - Role mismatch handling (string vs literal)
-          setUserState(profile);
+          // Only update state if user data has actually changed
+          setUserState((current) => {
+            if (JSON.stringify(current) !== JSON.stringify(profile)) {
+              console.log('User data changed, updating state');
+              return profile as AuthUser;
+            }
+            return current;
+          });
         }
       } else {
         setUserState(null);

@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { MessageCircle, Search } from 'lucide-react';
 import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
 import { useAuth } from '@/lib/auth-context';
 import { getUserConversations, ConversationPreview } from '@/app/chat-actions';
 
@@ -48,6 +49,28 @@ export default function ChatsPage() {
     const filteredConversations = conversations.filter(conv =>
         conv.recipientName.toLowerCase().includes(searchQuery.toLowerCase())
     );
+
+    // If auth is done loading and we have no user, show guest state
+    if (!authLoading && !user) {
+        return (
+            <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+                <div className="text-center max-w-sm">
+                    <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <MessageCircle className="w-8 h-8 text-blue-600" />
+                    </div>
+                    <h2 className="text-xl font-bold text-gray-900 mb-2">Sign in to Chat</h2>
+                    <p className="text-gray-500 mb-6">
+                        You need to be signed in to view your conversations and message mechanics.
+                    </p>
+                    <Link href="/login">
+                        <Button className="w-full bg-slate-900 hover:bg-slate-800">
+                            Sign In
+                        </Button>
+                    </Link>
+                </div>
+            </div>
+        );
+    }
 
     if (authLoading || isLoading) {
         return (

@@ -1,6 +1,7 @@
 'use server'
 
 import { PrismaClient } from '@prisma/client'
+import { unstable_cache } from 'next/cache'
 
 // Prisma singleton
 const globalForPrisma = globalThis as unknown as { prisma: PrismaClient }
@@ -59,9 +60,83 @@ export type FinanceStats = {
     weeklyPayments: { day: string; amount: number; count: number }[]
 }
 
+// --- GET FINANCE STATS (CACHED) ---
+
+const getFinanceStatsInternal = unstable_cache(
+    async () => {
+        try {
+            const now = new Date()
+            const weekAgo = new Date(now)
+            weekAgo.setDate(weekAgo.getDate() - 7)
+
+            const monthAgo = new Date(now)
+            monthAgo.setMonth(monthAgo.getMonth() - 1)
+
+            // Get payment stats
+            const [
+                allCompleted,
+                monthCompleted,
+                weekCompleted,
+                pendingPayments,
+                failedPayments
+            ] = await Promise.all([
+                prisma.payment.aggregate({
+                    where: { status: 'completed' },
+                    _sum: { amount: true },
+                    _count: true
+                }),
+                prisma.payment.aggregate({
+                    where: { status: 'completed', paidAt: { gte: monthAgo } },
+                    _sum: { amount: true }
+                }),
+                prisma.payment.aggregate({
+                    where: { status: 'completed', paidAt: { gte: weekAgo } },
+                    _sum: { amount: true }
+                }),
+                prisma.payment.aggregate({
+                    where: { status: 'pending' },
+                    _sum: { amount: true },
+                    _count: true
+                }),
+                prisma.payment.count({ where: { status: 'failed' } })
+            ])
+
+            return {
+                totalRevenue: allCompleted._sum.amount || 0,
+                monthlyRevenue: monthCompleted._sum.amount || 0,
+                weeklyRevenue: weekCompleted._sum.amount || 0,
+                pendingAmount: pendingPayments._sum.amount || 0,
+                completedPayments: allCompleted._count || 0,
+                pendingPayments: pendingPayments._count || 0,
+                failedPayments,
+                weeklyPayments: []
+            }
+        } catch (error) {
+            console.error('Failed to get finance stats internal:', error)
+            return null
+        }
+    },
+    ['finance-stats'],
+    { tags: ['finance'], revalidate: 60 } // Cache for 60 seconds
+)
+
 // --- GET FINANCE STATS ---
 
 export async function getFinanceStats(adminId: string): Promise<{ success: boolean; stats?: FinanceStats; error?: string }> {
+    if (!await isAdmin(adminId)) {
+        return { success: false, error: 'Unauthorized' }
+    }
+
+    const stats = await getFinanceStatsInternal()
+
+    if (!stats) {
+        return { success: false, error: 'Failed to load finance stats' }
+    }
+
+    return { success: true, stats }
+}
+
+async function getFinanceStats_Deprecated(adminId: string): Promise<{ success: boolean; stats?: FinanceStats; error?: string }> {
     if (!await isAdmin(adminId)) {
         return { success: false, error: 'Unauthorized' }
     }
@@ -207,36 +282,33 @@ export async function getRecentPayments(adminId: string): Promise<{ success: boo
 
 // --- GET DASHBOARD STATS ---
 
-export async function getAdminDashboardStats(adminId: string): Promise<{ success: boolean; stats?: DashboardStats; error?: string }> {
-    if (!await isAdmin(adminId)) {
-        return { success: false, error: 'Unauthorized' }
-    }
+// --- GET DASHBOARD STATS (CACHED) ---
 
-    try {
-        const today = new Date()
-        today.setHours(0, 0, 0, 0)
+const getAdminDashboardStatsInternal = unstable_cache(
+    async () => {
+        try {
+            const today = new Date()
+            today.setHours(0, 0, 0, 0)
 
-        const [
-            totalMechanics,
-            totalBreakdown,
-            verifiedCount,
-            pendingVerifications,
-            totalClients,
-            totalContacts,
-            contactsToday
-        ] = await Promise.all([
-            prisma.mechanicProfile.count({ where: { serviceType: 'mechanic' } }),
-            prisma.mechanicProfile.count({ where: { serviceType: 'breakdown' } }),
-            prisma.user.count({ where: { isVerified: true, role: { in: ['mechanic', 'breakdown'] } } }),
-            prisma.verificationRequest.count({ where: { status: 'pending' } }),
-            prisma.user.count({ where: { role: 'client' } }),
-            prisma.contactEvent.count(),
-            prisma.contactEvent.count({ where: { createdAt: { gte: today } } })
-        ])
+            const [
+                totalMechanics,
+                totalBreakdown,
+                verifiedCount,
+                pendingVerifications,
+                totalClients,
+                totalContacts,
+                contactsToday
+            ] = await Promise.all([
+                prisma.mechanicProfile.count({ where: { serviceType: 'mechanic' } }),
+                prisma.mechanicProfile.count({ where: { serviceType: 'breakdown' } }),
+                prisma.user.count({ where: { isVerified: true, role: { in: ['mechanic', 'breakdown'] } } }),
+                prisma.verificationRequest.count({ where: { status: 'pending' } }),
+                prisma.user.count({ where: { role: 'client' } }),
+                prisma.contactEvent.count(),
+                prisma.contactEvent.count({ where: { createdAt: { gte: today } } })
+            ])
 
-        return {
-            success: true,
-            stats: {
+            return {
                 totalMechanics,
                 totalBreakdown,
                 verifiedCount,
@@ -245,11 +317,27 @@ export async function getAdminDashboardStats(adminId: string): Promise<{ success
                 totalContacts,
                 contactsToday
             }
+        } catch (error) {
+            console.error('Failed to get dashboard stats internal:', error)
+            return null
         }
-    } catch (error) {
-        console.error('Failed to get admin stats:', error)
+    },
+    ['admin-dashboard-stats'],
+    { tags: ['dashboard'], revalidate: 60 } // Cache for 60 seconds
+)
+
+export async function getAdminDashboardStats(adminId: string): Promise<{ success: boolean; stats?: DashboardStats; error?: string }> {
+    if (!await isAdmin(adminId)) {
+        return { success: false, error: 'Unauthorized' }
+    }
+
+    const stats = await getAdminDashboardStatsInternal()
+
+    if (!stats) {
         return { success: false, error: 'Failed to load dashboard stats' }
     }
+
+    return { success: true, stats }
 }
 
 // --- GET WEEKLY CONTACT STATS ---

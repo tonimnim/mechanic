@@ -81,11 +81,12 @@ export function MechanicProfileView({ mechanic }: MechanicProfileViewProps) {
         setIsStartingChat(true);
         try {
             // Start or get existing conversation with this mechanic
-            const result = await startConversation(user.id, mechanic.visibleId);
+            // FIXED: Use mechanic.id (User ID) for startConversation, not visibleId (Profile ID)
+            const result = await startConversation(user.id, mechanic.id);
 
             if (result.success && result.conversationId) {
                 // Log the contact event
-                await logContact(mechanic.visibleId, 'whatsapp'); // Using 'whatsapp' as contact type for now
+                await logContact(mechanic.visibleId, 'chat');
 
                 // Navigate to the chat
                 router.push(`/chats/${result.conversationId}`);

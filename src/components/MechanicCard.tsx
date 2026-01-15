@@ -1,9 +1,12 @@
 'use client';
 
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Phone, MessageCircle, MapPin, Star } from 'lucide-react';
+import { Phone, MessageCircle, MapPin, Star, Loader2 } from 'lucide-react';
 import type { MechanicResult } from '@/app/actions';
 import { logContact } from '@/app/actions';
+import { useAuth } from '@/lib/auth-context';
+import { startConversation } from '@/app/chat-actions';
 
 interface MechanicCardProps {
     mechanic: MechanicResult;
@@ -37,6 +40,9 @@ function getInitials(name: string): string {
 
 export function MechanicCard({ mechanic }: MechanicCardProps) {
     const router = useRouter();
+    const { user } = useAuth();
+    const [isStartingChat, setIsStartingChat] = useState(false);
+
     const isOnline = mechanic.availability === 'online';
     const initials = getInitials(mechanic.name);
     const avatarColor = getAvatarColor(mechanic.name);
@@ -45,7 +51,7 @@ export function MechanicCard({ mechanic }: MechanicCardProps) {
     const reviewCount = Math.floor(mechanic.rating * 25 + 10);
 
     const handleCardClick = () => {
-        router.push(`/mechanic/${mechanic.id}`);
+        router.push(`/mechanic/${mechanic.visibleId}`);
     };
 
     const handleCall = async (e: React.MouseEvent) => {
@@ -58,15 +64,37 @@ export function MechanicCard({ mechanic }: MechanicCardProps) {
         window.location.href = `tel:${mechanic.phone}`;
     };
 
-    const handleWhatsApp = async (e: React.MouseEvent) => {
+    const handleChat = async (e: React.MouseEvent) => {
         e.stopPropagation(); // Prevent card click
-        // Log the contact event
-        if (mechanic.visibleId) {
-            await logContact(mechanic.visibleId, 'whatsapp');
+
+        if (!user) {
+            // Redirect to login if not authenticated
+            router.push('/login?redirect=' + encodeURIComponent(`/mechanic/${mechanic.visibleId}`));
+            return;
         }
-        // Clean phone number for WhatsApp (remove + and spaces)
-        const cleanPhone = mechanic.phone.replace(/[^0-9]/g, '');
-        window.open(`https://wa.me/${cleanPhone}`, '_blank');
+
+        setIsStartingChat(true);
+        try {
+            // Log the contact event
+            if (mechanic.visibleId) {
+                await logContact(mechanic.visibleId, 'chat');
+            }
+
+            // Start conversation
+            // Mechanic ID for conversation is the userId
+            const result = await startConversation(user.id, mechanic.id);
+
+            if (result.success && result.conversationId) {
+                router.push(`/chats/${result.conversationId}`);
+            } else {
+                alert('Failed to start chat. Please try again.');
+            }
+        } catch (error) {
+            console.error('Failed to start chat:', error);
+            alert('Failed to start chat. Please try again.');
+        } finally {
+            setIsStartingChat(false);
+        }
     };
 
     return (
@@ -135,11 +163,16 @@ export function MechanicCard({ mechanic }: MechanicCardProps) {
                         <Phone size={18} />
                     </button>
                     <button
-                        onClick={handleWhatsApp}
-                        className="w-10 h-10 flex items-center justify-center bg-green-500 hover:bg-green-600 text-white rounded-xl transition-colors active:scale-95"
-                        aria-label="WhatsApp"
+                        onClick={handleChat}
+                        disabled={isStartingChat}
+                        className="w-10 h-10 flex items-center justify-center bg-green-500 hover:bg-green-600 disabled:opacity-70 disabled:cursor-not-allowed text-white rounded-xl transition-colors active:scale-95"
+                        aria-label="Chat"
                     >
-                        <MessageCircle size={18} />
+                        {isStartingChat ? (
+                            <Loader2 size={18} className="animate-spin" />
+                        ) : (
+                            <MessageCircle size={18} />
+                        )}
                     </button>
                 </div>
             </div>

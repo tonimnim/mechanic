@@ -42,84 +42,44 @@ export type ContactHistoryItem = {
   mechanicName: string
   mechanicInitials: string
   specialties: string
-  method: 'call' | 'whatsapp'
+  method: 'call' | 'whatsapp' | 'chat'
   createdAt: string
   phone: string
 }
 
-// --- MECHANICS (for Mobile PWA) ---
+// --- FETCH MECHANICS ---
 
-export async function getMechanics(query: string = '', serviceType?: 'mechanic' | 'breakdown'): Promise<MechanicResult[]> {
-  const mechanics = await prisma.mechanicProfile.findMany({
-    where: {
-      ...(serviceType && { serviceType }),
-      ...(query && {
-        OR: [
-          { city: { contains: query } },
-          { specialties: { contains: query } },
-          { user: { fullName: { contains: query } } }
-        ]
-      })
-    },
-    include: { user: true }
-  })
+export async function getMechanics(): Promise<MechanicResult[]> {
+  try {
+    const mechanics = await prisma.mechanicProfile.findMany({
+      include: { user: true },
+      orderBy: { createdAt: 'desc' }
+    })
 
-  return mechanics.map(m => ({
-    id: m.userId,
-    visibleId: m.id, // MechanicProfile ID
-    type: 'mechanic' as const,
-    name: m.user.fullName,
-    subtitle: m.specialties.split(',').map(s => s.trim()).join(', '),
-    location: m.city,
-    phone: m.phone,
-    isVerified: m.user.isVerified,
-    rating: m.avgRating || 4.8, // Use cached rating or default
-    avatarUrl: m.user.avatarUrl,
-    availability: m.availability
-  }))
-}
-
-// --- SHOPS / SPARE PARTS (for Desktop Web) ---
-
-export async function getShops(query: string = ''): Promise<ShopResult[]> {
-  const shops = await prisma.shopProfile.findMany({
-    where: query ? {
-      OR: [
-        { city: { contains: query } },
-        { inventoryCategories: { contains: query } },
-        { shopName: { contains: query } }
-      ]
-    } : undefined,
-    include: { user: true }
-  })
-
-  return shops.map(s => ({
-    id: s.userId,
-    type: 'shop' as const,
-    name: s.shopName,
-    subtitle: s.inventoryCategories.split(',').map(c => c.trim()).join(', '),
-    location: s.city,
-    isVerified: s.user.isVerified,
-    rating: 4.5, // TODO: Calculate from Review table
-    avatarUrl: s.user.avatarUrl
-  }))
-}
-
-// --- COMBINED (backwards compatibility) ---
-
-export async function getListings(query: string = ''): Promise<SearchResult[]> {
-  const [mechanics, shops] = await Promise.all([
-    getMechanics(query),
-    getShops(query)
-  ])
-  return [...mechanics, ...shops]
+    return mechanics.map(m => ({
+      id: m.userId,
+      visibleId: m.id,
+      type: 'mechanic' as const,
+      name: m.user.fullName,
+      subtitle: m.specialties.split(',').map(s => s.trim()).join(', '),
+      location: `${m.city} • ${m.address}`,
+      phone: m.phone,
+      isVerified: m.user.isVerified,
+      rating: m.avgRating || 4.5,
+      avatarUrl: m.user.avatarUrl,
+      availability: m.availability
+    }))
+  } catch (error) {
+    console.error('Failed to fetch mechanics:', error)
+    return []
+  }
 }
 
 // --- CONTACT LOGGING ---
 
 export async function logContact(
   mechanicProfileId: string,
-  method: 'call' | 'whatsapp',
+  method: 'call' | 'whatsapp' | 'chat',
   clientId?: string
 ) {
   try {
