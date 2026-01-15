@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
+import { useAdminData } from '@/lib/admin-data-context';
 import { AdminSidebar } from '@/components/AdminSidebar';
 import { AdminHeader } from '@/components/admin/AdminHeader';
 import { StatCard } from '@/components/admin/StatCard';
@@ -10,16 +11,8 @@ import { WeeklyChart } from '@/components/admin/WeeklyChart';
 import MechanicsContent from '@/components/admin/MechanicsContent';
 import { FinancesPanel } from '@/components/admin/FinancesPanel';
 import {
-    getAdminDashboardStats,
-    getPendingVerifications,
-    getWeeklyContactStats,
-    getWeeklySignupStats,
     approveVerification,
-    rejectVerification,
-    DashboardStats,
-    VerificationListItem,
-    WeeklyContactData,
-    WeeklySignupData
+    rejectVerification
 } from '@/app/admin-actions';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -44,47 +37,29 @@ import {
 export default function AdminDashboard() {
     const { user, isLoading: authLoading } = useAuth();
     const router = useRouter();
+    const { data, isLoading, fetchData, updatePendingRequests, updateStats } = useAdminData();
 
-    const [stats, setStats] = useState<DashboardStats | null>(null);
-    const [weeklyContacts, setWeeklyContacts] = useState<WeeklyContactData[]>([]);
-    const [weeklySignups, setWeeklySignups] = useState<WeeklySignupData[]>([]);
-    const [pendingRequests, setPendingRequests] = useState<VerificationListItem[]>([]);
-    const [isLoading, setIsLoading] = useState(true);
+    // Destructure cached data
+    const { stats, weeklyContacts, weeklySignups, pendingRequests } = data;
+
     const [activeTab, setActiveTab] = useState('overview');
     const [searchQuery, setSearchQuery] = useState('');
-
     const [processingId, setProcessingId] = useState<string | null>(null);
     const [rejectReason, setRejectReason] = useState('');
     const [showRejectModal, setShowRejectModal] = useState<string | null>(null);
 
     useEffect(() => {
-        async function loadData() {
-            if (user?.id && user.role === 'admin') {
-                const [statsResult, requestsResult, contactsResult, signupsResult] = await Promise.all([
-                    getAdminDashboardStats(user.id),
-                    getPendingVerifications(user.id),
-                    getWeeklyContactStats(user.id),
-                    getWeeklySignupStats(user.id)
-                ]);
-
-                if (statsResult.success) setStats(statsResult.stats!);
-                if (requestsResult.success) setPendingRequests(requestsResult.requests!);
-                if (contactsResult.success) setWeeklyContacts(contactsResult.data!);
-                if (signupsResult.success) setWeeklySignups(signupsResult.data!);
-            }
-            setIsLoading(false);
-        }
-
         if (!authLoading) {
             if (!user) {
                 router.push('/login');
             } else if (user.role !== 'admin') {
                 router.push('/');
             } else {
-                loadData();
+                // Fetch data using cached context (won't refetch if cache is fresh)
+                fetchData(user.id);
             }
         }
-    }, [user, authLoading, router]);
+    }, [user, authLoading, router, fetchData]);
 
     const handleApprove = async (requestId: string) => {
         if (!user?.id) return;
@@ -92,14 +67,12 @@ export default function AdminDashboard() {
 
         const result = await approveVerification(user.id, requestId);
         if (result.success) {
-            setPendingRequests(prev => prev.filter(r => r.id !== requestId));
-            if (stats) {
-                setStats({
-                    ...stats,
-                    pendingVerifications: stats.pendingVerifications - 1,
-                    verifiedCount: stats.verifiedCount + 1
-                });
-            }
+            updatePendingRequests(prev => prev.filter(r => r.id !== requestId));
+            updateStats(prev => prev ? {
+                ...prev,
+                pendingVerifications: prev.pendingVerifications - 1,
+                verifiedCount: prev.verifiedCount + 1
+            } : null);
         }
         setProcessingId(null);
     };
@@ -110,13 +83,11 @@ export default function AdminDashboard() {
 
         const result = await rejectVerification(user.id, requestId, rejectReason);
         if (result.success) {
-            setPendingRequests(prev => prev.filter(r => r.id !== requestId));
-            if (stats) {
-                setStats({
-                    ...stats,
-                    pendingVerifications: stats.pendingVerifications - 1
-                });
-            }
+            updatePendingRequests(prev => prev.filter(r => r.id !== requestId));
+            updateStats(prev => prev ? {
+                ...prev,
+                pendingVerifications: prev.pendingVerifications - 1
+            } : null);
         }
         setProcessingId(null);
         setShowRejectModal(null);

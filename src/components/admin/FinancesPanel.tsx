@@ -1,38 +1,13 @@
 'use client';
 
-import { useState, useEffect } from 'react';
 import { DollarSign, TrendingUp, Clock, Loader2 } from 'lucide-react';
-import { getFinanceStats, FinanceStats, getRecentPayments, PaymentRecord } from '@/app/admin-actions';
-import { useAuth } from '@/lib/auth-context';
+import { useAdminData } from '@/lib/admin-data-context';
 
 export function FinancesPanel() {
-    const { user } = useAuth();
-    const [stats, setStats] = useState<FinanceStats | null>(null);
-    const [payments, setPayments] = useState<PaymentRecord[]>([]);
-    const [loading, setLoading] = useState(true);
+    const { data, isLoading } = useAdminData();
+    const { financeStats: stats, recentPayments: payments } = data;
 
-    useEffect(() => {
-        async function loadData() {
-            if (!user) return;
-
-            setLoading(true);
-            const [statsResult, paymentsResult] = await Promise.all([
-                getFinanceStats(user.id),
-                getRecentPayments(user.id)
-            ]);
-
-            if (statsResult.success && statsResult.stats) {
-                setStats(statsResult.stats);
-            }
-            if (paymentsResult.success && paymentsResult.payments) {
-                setPayments(paymentsResult.payments);
-            }
-            setLoading(false);
-        }
-        loadData();
-    }, [user]);
-
-    if (loading) {
+    if (isLoading) {
         return (
             <div className="flex items-center justify-center h-64">
                 <Loader2 className="w-8 h-8 animate-spin text-slate-400" />
