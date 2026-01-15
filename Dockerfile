@@ -32,10 +32,15 @@ WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
-# Set build-time environment variables (placeholders for build)
-ENV NEXT_PUBLIC_SUPABASE_URL=https://placeholder.supabase.co
-ENV NEXT_PUBLIC_SUPABASE_ANON_KEY=placeholder
-ENV NEXT_PUBLIC_VAPID_PUBLIC_KEY=placeholder
+# Build-time arguments for NEXT_PUBLIC variables (must be set at build time!)
+ARG NEXT_PUBLIC_SUPABASE_URL
+ARG NEXT_PUBLIC_SUPABASE_ANON_KEY
+ARG NEXT_PUBLIC_VAPID_PUBLIC_KEY
+
+# Set as ENV for the build process
+ENV NEXT_PUBLIC_SUPABASE_URL=$NEXT_PUBLIC_SUPABASE_URL
+ENV NEXT_PUBLIC_SUPABASE_ANON_KEY=$NEXT_PUBLIC_SUPABASE_ANON_KEY
+ENV NEXT_PUBLIC_VAPID_PUBLIC_KEY=$NEXT_PUBLIC_VAPID_PUBLIC_KEY
 ENV VAPID_PRIVATE_KEY=placeholder
 ENV DATABASE_URL=postgresql://placeholder:placeholder@localhost:5432/placeholder
 
