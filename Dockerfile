@@ -1,13 +1,15 @@
 # syntax=docker/dockerfile:1
 
 # ========================================
-# Base image with Node.js
+# Base image with Node.js (Debian-slim for Prisma compatibility)
 # ========================================
-FROM node:22-alpine AS base
+FROM node:22-slim AS base
+
+# Install OpenSSL for Prisma
+RUN apt-get update -y && apt-get install -y openssl libssl-dev ca-certificates && rm -rf /var/lib/apt/lists/*
 
 # Install dependencies only when needed
 FROM base AS deps
-RUN apk add --no-cache libc6-compat
 WORKDIR /app
 
 # Copy package files
@@ -30,7 +32,7 @@ WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
-# Set build-time environment variables (these are placeholders for build)
+# Set build-time environment variables (placeholders for build)
 ENV NEXT_PUBLIC_SUPABASE_URL=https://placeholder.supabase.co
 ENV NEXT_PUBLIC_SUPABASE_ANON_KEY=placeholder
 ENV NEXT_PUBLIC_VAPID_PUBLIC_KEY=placeholder

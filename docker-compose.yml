@@ -1,25 +1,23 @@
-version: '3.8'
-
 services:
   app:
     build:
       context: .
       dockerfile: Dockerfile
     ports:
-      - "3000:3000"
+      - "3001:3000"
     environment:
-      - DATABASE_URL=${DATABASE_URL}
-      - DIRECT_URL=${DIRECT_URL}
-      - NEXT_PUBLIC_SUPABASE_URL=${NEXT_PUBLIC_SUPABASE_URL}
-      - NEXT_PUBLIC_SUPABASE_ANON_KEY=${NEXT_PUBLIC_SUPABASE_ANON_KEY}
-      - NEXT_PUBLIC_VAPID_PUBLIC_KEY=${NEXT_PUBLIC_VAPID_PUBLIC_KEY}
-      - VAPID_PRIVATE_KEY=${VAPID_PRIVATE_KEY}
-      - MPESA_CONSUMER_KEY=${MPESA_CONSUMER_KEY}
-      - MPESA_CONSUMER_SECRET=${MPESA_CONSUMER_SECRET}
-      - MPESA_PASSKEY=${MPESA_PASSKEY}
-      - MPESA_SHORTCODE=${MPESA_SHORTCODE}
-      - MPESA_CALLBACK_URL=${MPESA_CALLBACK_URL}
-      - MPESA_ENV=${MPESA_ENV}
+      - DATABASE_URL=postgresql://postgres:postgres@db:5432/mechanic
+      - DIRECT_URL=postgresql://postgres:postgres@db:5432/mechanic
+      - NEXT_PUBLIC_SUPABASE_URL=https://ktboegpewipldfdqyfcr.supabase.co
+      - NEXT_PUBLIC_SUPABASE_ANON_KEY=sb_publishable_Ac93z_PZI-u3DUjllXuvAg_OQHion10
+      - NEXT_PUBLIC_VAPID_PUBLIC_KEY=BA6HkauMNkXOrAXxJyex5MPnxVmNXOU3R110lutNTmatgzpbDosr-Cd58C1Tl4U4LReCOeROZT_hEfRNSNDBvJc
+      - VAPID_PRIVATE_KEY=fkUrtwDNLhMPfOe6w9yGUwFg0mf9E7cXpgdbIMcu5dY
+      - MPESA_CONSUMER_KEY=ua0YUJO72fvav1tj2XfqWsATl6A7z8bMIzUcOzPfXtLyRxWR
+      - MPESA_CONSUMER_SECRET=opDvxUre65QYm6xzOyr5AAvnFdXG6PMewvlB6qp4y9XBcsB6TfjEdL5AGtKUrQkw
+      - MPESA_PASSKEY=bfb279f9aa9bdbcf158e97dd71a467cd2e0c893059b10f78e6b72ada1ed2c919
+      - MPESA_SHORTCODE=174379
+      - MPESA_CALLBACK_URL=https://your-domain.com/api/mpesa/callback
+      - MPESA_ENV=sandbox
     depends_on:
       - db
     restart: unless-stopped
@@ -31,7 +29,7 @@ services:
       - POSTGRES_PASSWORD=postgres
       - POSTGRES_DB=mechanic
     ports:
-      - "5432:5432"
+      - "5433:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     restart: unless-stopped
