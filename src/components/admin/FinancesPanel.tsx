@@ -1,27 +1,35 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { DollarSign, TrendingUp, Clock, XCircle, Loader2 } from 'lucide-react';
-import { getFinanceStats, FinanceStats } from '@/app/admin-actions';
+import { DollarSign, TrendingUp, Clock, Loader2 } from 'lucide-react';
+import { getFinanceStats, FinanceStats, getRecentPayments, PaymentRecord } from '@/app/admin-actions';
 import { useAuth } from '@/lib/auth-context';
 
 export function FinancesPanel() {
     const { user } = useAuth();
     const [stats, setStats] = useState<FinanceStats | null>(null);
+    const [payments, setPayments] = useState<PaymentRecord[]>([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        async function loadStats() {
+        async function loadData() {
             if (!user) return;
 
             setLoading(true);
-            const result = await getFinanceStats(user.id);
-            if (result.success && result.stats) {
-                setStats(result.stats);
+            const [statsResult, paymentsResult] = await Promise.all([
+                getFinanceStats(user.id),
+                getRecentPayments(user.id)
+            ]);
+
+            if (statsResult.success && statsResult.stats) {
+                setStats(statsResult.stats);
+            }
+            if (paymentsResult.success && paymentsResult.payments) {
+                setPayments(paymentsResult.payments);
             }
             setLoading(false);
         }
-        loadStats();
+        loadData();
     }, [user]);
 
     if (loading) {
@@ -42,10 +50,8 @@ export function FinancesPanel() {
 
     return (
         <div className="space-y-6">
-            <h2 className="text-xl font-semibold text-white">Financial Overview</h2>
-
-            {/* Revenue Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {/* Revenue Summary Cards */}
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                 <StatCard
                     title="Total Revenue"
                     value={`KSh ${stats.totalRevenue.toLocaleString()}`}
@@ -72,62 +78,63 @@ export function FinancesPanel() {
                 />
             </div>
 
-            {/* Payment Status */}
-            <div className="bg-slate-800/50 rounded-xl p-6">
-                <h3 className="text-lg font-medium text-white mb-4">Payment Status</h3>
-                <div className="grid grid-cols-3 gap-4">
-                    <div className="text-center">
-                        <div className="text-3xl font-bold text-green-400">{stats.completedPayments}</div>
-                        <div className="text-sm text-slate-400">Completed</div>
-                    </div>
-                    <div className="text-center">
-                        <div className="text-3xl font-bold text-yellow-400">{stats.pendingPayments}</div>
-                        <div className="text-sm text-slate-400">Pending</div>
-                    </div>
-                    <div className="text-center">
-                        <div className="text-3xl font-bold text-red-400">{stats.failedPayments}</div>
-                        <div className="text-sm text-slate-400">Failed</div>
-                    </div>
+            {/* Payments Table */}
+            <div className="bg-slate-800/50 rounded-xl overflow-hidden">
+                <div className="px-6 py-4 border-b border-slate-700">
+                    <h3 className="text-lg font-medium text-white">Recent Payments</h3>
                 </div>
-            </div>
 
-            {/* Weekly Chart */}
-            <div className="bg-slate-800/50 rounded-xl p-6">
-                <h3 className="text-lg font-medium text-white mb-4">Weekly Revenue</h3>
-                <div className="flex items-end justify-between gap-2 h-40">
-                    {stats.weeklyPayments.map((day, i) => {
-                        const maxAmount = Math.max(...stats.weeklyPayments.map(d => d.amount), 1);
-                        const heightPercent = (day.amount / maxAmount) * 100;
-
-                        return (
-                            <div key={i} className="flex-1 flex flex-col items-center gap-2">
-                                <div className="w-full flex flex-col items-center justify-end h-28">
-                                    <div
-                                        className="w-full bg-gradient-to-t from-blue-600 to-blue-400 rounded-t"
-                                        style={{ height: `${Math.max(heightPercent, 4)}%` }}
-                                    />
-                                </div>
-                                <div className="text-xs text-slate-400">{day.day}</div>
-                                <div className="text-xs text-slate-500">
-                                    {day.amount > 0 ? `${day.amount}` : '-'}
-                                </div>
-                            </div>
-                        );
-                    })}
-                </div>
-            </div>
-
-            {/* Transaction Count Summary */}
-            <div className="bg-slate-800/50 rounded-xl p-6">
-                <h3 className="text-lg font-medium text-white mb-4">Weekly Transactions</h3>
-                <div className="grid grid-cols-7 gap-2">
-                    {stats.weeklyPayments.map((day, i) => (
-                        <div key={i} className="text-center bg-slate-700/50 rounded-lg p-3">
-                            <div className="text-lg font-bold text-white">{day.count}</div>
-                            <div className="text-xs text-slate-400">{day.day}</div>
-                        </div>
-                    ))}
-                </div>
+                {payments.length > 0 ? (
+                    <div className="overflow-x-auto">
+                        <table className="w-full">
+                            <thead className="bg-slate-900/50">
+                                <tr>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">User</th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">Phone</th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">Amount</th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">Status</th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">Date</th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">Receipt</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-700">
+                                {payments.map((payment) => (
+                                    <tr key={payment.id} className="hover:bg-slate-700/30 transition-colors">
+                                        <td className="px-6 py-4 whitespace-nowrap">
+                                            <div className="text-sm font-medium text-white">{payment.userName}</div>
+                                            <div className="text-xs text-slate-400">{payment.userEmail}</div>
+                                        </td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-300">
+                                            {payment.phoneNumber}
+                                        </td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-white">
+                                            KSh {payment.amount.toLocaleString()}
+                                        </td>
+                                        <td className="px-6 py-4 whitespace-nowrap">
+                                            <StatusBadge status={payment.status} />
+                                        </td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-300">
+                                            {new Date(payment.createdAt).toLocaleDateString('en-KE', {
+                                                day: 'numeric',
+                                                month: 'short',
+                                                year: 'numeric',
+                                                hour: '2-digit',
+                                                minute: '2-digit'
+                                            })}
+                                        </td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-400">
+                                            {payment.mpesaReceiptNumber || '-'}
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                ) : (
+                    <div className="px-6 py-12 text-center text-slate-400">
+                        No payments yet
+                    </div>
+                )}
             </div>
         </div>
     );
@@ -142,14 +149,13 @@ function StatCard({
     title: string;
     value: string;
     icon: React.ReactNode;
-    color: 'green' | 'blue' | 'purple' | 'yellow' | 'red';
+    color: 'green' | 'blue' | 'purple' | 'yellow';
 }) {
     const colorClasses = {
         green: 'bg-green-500/10 text-green-400',
         blue: 'bg-blue-500/10 text-blue-400',
         purple: 'bg-purple-500/10 text-purple-400',
         yellow: 'bg-yellow-500/10 text-yellow-400',
-        red: 'bg-red-500/10 text-red-400',
     };
 
     return (
@@ -164,5 +170,21 @@ function StatCard({
                 </div>
             </div>
         </div>
+    );
+}
+
+function StatusBadge({ status }: { status: string }) {
+    const styles = {
+        completed: 'bg-green-500/10 text-green-400 border-green-500/20',
+        pending: 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20',
+        failed: 'bg-red-500/10 text-red-400 border-red-500/20',
+    };
+
+    const style = styles[status as keyof typeof styles] || styles.pending;
+
+    return (
+        <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full border ${style}`}>
+            {status.charAt(0).toUpperCase() + status.slice(1)}
+        </span>
     );
 }

@@ -150,6 +150,61 @@ export async function getFinanceStats(adminId: string): Promise<{ success: boole
     }
 }
 
+// --- PAYMENT RECORD TYPE ---
+
+export type PaymentRecord = {
+    id: string
+    userName: string
+    userEmail: string
+    phoneNumber: string
+    amount: number
+    status: string
+    mpesaReceiptNumber: string | null
+    createdAt: string
+    paidAt: string | null
+}
+
+// --- GET RECENT PAYMENTS ---
+
+export async function getRecentPayments(adminId: string): Promise<{ success: boolean; payments?: PaymentRecord[]; error?: string }> {
+    if (!await isAdmin(adminId)) {
+        return { success: false, error: 'Unauthorized' }
+    }
+
+    try {
+        const payments = await prisma.payment.findMany({
+            include: {
+                user: {
+                    select: {
+                        fullName: true,
+                        email: true
+                    }
+                }
+            },
+            orderBy: { createdAt: 'desc' },
+            take: 50
+        })
+
+        return {
+            success: true,
+            payments: payments.map(p => ({
+                id: p.id,
+                userName: p.user.fullName,
+                userEmail: p.user.email,
+                phoneNumber: p.phoneNumber,
+                amount: p.amount,
+                status: p.status,
+                mpesaReceiptNumber: p.mpesaReceiptNumber,
+                createdAt: p.createdAt.toISOString(),
+                paidAt: p.paidAt?.toISOString() || null
+            }))
+        }
+    } catch (error) {
+        console.error('Failed to get recent payments:', error)
+        return { success: false, error: 'Failed to load payments' }
+    }
+}
+
 // --- GET DASHBOARD STATS ---
 
 export async function getAdminDashboardStats(adminId: string): Promise<{ success: boolean; stats?: DashboardStats; error?: string }> {
