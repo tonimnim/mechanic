@@ -1,34 +1,34 @@
 'use client'
- 
+
 import { useState, useEffect } from 'react'
 import { subscribeUser, unsubscribeUser, sendNotification } from '@/app/actions'
 import { Button } from '@/components/ui/button'
 import { Bell, BellOff } from 'lucide-react'
- 
+
 function urlBase64ToUint8Array(base64String: string) {
   const padding = '='.repeat((4 - (base64String.length % 4)) % 4)
   const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/')
- 
+
   const rawData = window.atob(base64)
   const outputArray = new Uint8Array(rawData.length)
- 
+
   for (let i = 0; i < rawData.length; ++i) {
     outputArray[i] = rawData.charCodeAt(i)
   }
   return outputArray
 }
- 
+
 export function PushNotificationManager() {
   const [isSupported, setIsSupported] = useState(false)
   const [subscription, setSubscription] = useState<PushSubscription | null>(null)
- 
+
   useEffect(() => {
     if ('serviceWorker' in navigator && 'PushManager' in window) {
       setIsSupported(true)
       registerServiceWorker()
     }
   }, [])
- 
+
   async function registerServiceWorker() {
     const registration = await navigator.serviceWorker.register('/sw.js', {
       scope: '/',
@@ -37,7 +37,7 @@ export function PushNotificationManager() {
     const sub = await registration.pushManager.getSubscription()
     setSubscription(sub)
   }
- 
+
   async function subscribeToPush() {
     const registration = await navigator.serviceWorker.ready
     const sub = await registration.pushManager.subscribe({
@@ -50,21 +50,21 @@ export function PushNotificationManager() {
     // Needs type assertion because web-push types and DOM types mismatch slightly
     const serializedSub = JSON.parse(JSON.stringify(sub))
     await subscribeUser(serializedSub)
-    
+
     // Send immediate test
-    await sendNotification("Welcome to MechanicFinder! You will now receive updates.")
+    await sendNotification("Welcome to eGarage! You will now receive updates.")
   }
- 
+
   async function unsubscribeFromPush() {
     await subscription?.unsubscribe()
     setSubscription(null)
     await unsubscribeUser()
   }
- 
+
   if (!isSupported) {
-    return null 
+    return null
   }
- 
+
   return (
     <div className="flex items-center justify-center p-4">
       {subscription ? (

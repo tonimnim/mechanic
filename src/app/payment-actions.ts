@@ -60,7 +60,7 @@ export async function initiateVerificationPayment(
             phoneNumber: formatPhoneNumber(phoneNumber),
             amount: VERIFICATION_FEE,
             accountReference: `MF-${userId.substring(0, 8)}`,
-            transactionDesc: 'MechanicFinder Verification'
+            transactionDesc: 'eGarage Verification'
         });
 
         if (!stkResult.success) {

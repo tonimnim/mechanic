@@ -256,7 +256,7 @@ export default function MechanicRegistrationPage() {
                         )}
                         <div className="flex-1">
                             <h1 className="font-semibold text-white">
-                                {step <= totalSteps ? 'Join MechanicFinder' : 'Registration Complete'}
+                                {step <= totalSteps ? 'Join eGarage' : 'Registration Complete'}
                             </h1>
                             {step <= totalSteps && (
                                 <p className="text-sm text-gray-400">Step {step} of {totalSteps}</p>

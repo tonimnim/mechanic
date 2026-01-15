@@ -33,7 +33,7 @@ export function TopNav() {
             <Wrench size={20} />
           </div>
           <span className="font-bold text-xl tracking-tight text-slate-900">
-            MechanicFinder<span className="text-blue-600">.ke</span>
+            eGarage<span className="text-blue-600">.ke</span>
           </span>
         </Link>
 

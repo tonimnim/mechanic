@@ -1,4 +1,4 @@
-# MechanicFinder Kenya 🔧
+# eGarage Kenya 🔧
 
 Find trusted mechanics and breakdown services across Kenya.
 

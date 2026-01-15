@@ -1,9 +1,9 @@
 import type { MetadataRoute } from 'next'
- 
+
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: 'MechanicFinder Kenya',
-    short_name: 'MechanicFinder',
+    name: 'eGarage Kenya',
+    short_name: 'eGarage',
     description: 'Find trusted mechanics and spare parts in Kenya.',
     start_url: '/',
     display: 'standalone',

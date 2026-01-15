@@ -16,7 +16,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "MechanicFinder Kenya",
+  title: "eGarage Kenya",
   description: "Find trusted mechanics and parts in Kenya",
 };
 

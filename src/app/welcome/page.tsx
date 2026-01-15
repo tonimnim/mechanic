@@ -36,7 +36,7 @@ export default function WelcomePage() {
 
                     {/* App Name */}
                     <h1 className="text-3xl font-bold text-white mb-2">
-                        MechanicFinder
+                        eGarage
                     </h1>
                     <p className="text-gray-400 text-lg">
                         Kenya's #1 Roadside Assistance
@@ -51,7 +51,7 @@ export default function WelcomePage() {
                 {/* Options Section */}
                 <div className="space-y-4 pb-8">
                     <p className="text-center text-gray-400 text-sm mb-6">
-                        How would you like to use MechanicFinder?
+                        How would you like to use eGarage?
                     </p>
 
                     {/* Driver Option */}
