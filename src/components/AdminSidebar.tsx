@@ -5,8 +5,7 @@ import {
     LayoutDashboard,
     Shield,
     Users,
-    LogOut,
-    Wrench
+    LogOut
 } from 'lucide-react';
 
 interface AdminSidebarProps {
@@ -22,9 +21,7 @@ export function AdminSidebar({ activeTab, onTabChange, pendingCount = 0 }: Admin
         <aside className="fixed left-0 top-0 h-screen w-56 bg-slate-900 border-r border-slate-800 p-4 hidden lg:flex flex-col z-50">
             {/* Logo */}
             <div className="flex items-center gap-2 px-2 mb-8">
-                <div className="w-8 h-8 rounded-lg bg-orange-500 flex items-center justify-center">
-                    <Wrench className="w-4 h-4 text-white" />
-                </div>
+                <img src="/logo.jpg" alt="eGarage" className="w-8 h-8 rounded-lg object-cover" />
                 <span className="font-semibold text-white">Admin</span>
             </div>
 
@@ -80,8 +77,8 @@ function NavItem({
         <button
             onClick={onClick}
             className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors ${active
-                    ? 'bg-slate-800 text-white'
-                    : 'text-slate-400 hover:text-white hover:bg-slate-800/50'
+                ? 'bg-slate-800 text-white'
+                : 'text-slate-400 hover:text-white hover:bg-slate-800/50'
                 }`}
         >
             {icon}
