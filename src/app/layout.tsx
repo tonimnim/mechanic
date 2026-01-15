@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/lib/auth-context";
+import { MechanicDashboardProvider } from "@/lib/mechanic-dashboard-context";
+import { ChatsDataProvider } from "@/lib/chats-data-context";
 import { BottomNav } from "@/components/BottomNav";
 import { TopNav } from "@/components/TopNav";
 
@@ -36,13 +38,18 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased bg-slate-50`}
       >
         <AuthProvider>
-          <TopNav />
-          <div className="pb-16 md:pb-0"> {/* Padding for Bottom Nav only on mobile */}
-            {children}
-          </div>
-          <BottomNav />
+          <MechanicDashboardProvider>
+            <ChatsDataProvider>
+              <TopNav />
+              <div className="pb-16 md:pb-0"> {/* Padding for Bottom Nav only on mobile */}
+                {children}
+              </div>
+              <BottomNav />
+            </ChatsDataProvider>
+          </MechanicDashboardProvider>
         </AuthProvider>
       </body>
     </html>
   );
 }
+

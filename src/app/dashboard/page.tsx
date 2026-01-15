@@ -2,12 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/lib/auth-context';
-import {
-    getMechanicProfile,
-    getMechanicStats,
-    updateMechanicAvailability,
-    getVerificationStatus
-} from '@/app/mechanic-actions';
+import { useMechanicDashboard } from '@/lib/mechanic-dashboard-context';
+import { updateMechanicAvailability } from '@/app/mechanic-actions';
 import {
     Users,
     Star,
@@ -31,49 +27,18 @@ type VerificationState = 'none' | 'pending' | 'approved' | 'rejected' | 'verifie
 
 export default function MechanicDashboard() {
     const { user, isLoading: authLoading } = useAuth();
-    const [profile, setProfile] = useState<any>(null);
-    const [stats, setStats] = useState<any>(null);
-    const [isLoading, setIsLoading] = useState(true);
+    const { data, isLoading, fetchData, updateProfile } = useMechanicDashboard();
+
+    // Destructure cached data
+    const { profile, stats, verificationState, verificationRequestId } = data;
+
     const [isToggling, setIsToggling] = useState(false);
-    const [verificationState, setVerificationState] = useState<VerificationState>('none');
-    const [verificationRequestId, setVerificationRequestId] = useState<string | null>(null);
 
     useEffect(() => {
-        async function loadData() {
-            if (user?.id) {
-                try {
-                    const [profileRes, statsRes, verifyRes] = await Promise.all([
-                        getMechanicProfile(user.id),
-                        getMechanicStats(user.id),
-                        getVerificationStatus(user.id)
-                    ]);
-
-                    if (profileRes.success) setProfile(profileRes.profile);
-                    if (statsRes.success) setStats(statsRes.stats);
-
-                    // Determine verification state
-                    if (verifyRes.success) {
-                        if (verifyRes.isVerified) {
-                            setVerificationState('verified');
-                        } else if (verifyRes.latestRequest) {
-                            setVerificationState(verifyRes.latestRequest.status as VerificationState);
-                            setVerificationRequestId(verifyRes.latestRequest.id);
-                        } else {
-                            setVerificationState('none');
-                        }
-                    }
-                } catch (error) {
-                    console.error('Failed to load dashboard data', error);
-                } finally {
-                    setIsLoading(false);
-                }
-            }
-        }
-
         if (!authLoading && user) {
-            loadData();
+            fetchData(user.id);
         }
-    }, [user, authLoading]);
+    }, [user, authLoading, fetchData]);
 
     const handleAvailabilityToggle = async () => {
         if (!profile) return;
@@ -84,7 +49,7 @@ export default function MechanicDashboard() {
         try {
             const result = await updateMechanicAvailability(user!.id, newStatus);
             if (result.success) {
-                setProfile((prev: any) => ({ ...prev, availability: newStatus }));
+                updateProfile((prev: any) => ({ ...prev, availability: newStatus }));
             }
         } catch {
             // Handle error

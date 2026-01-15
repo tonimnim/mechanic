@@ -6,7 +6,7 @@ import { MessageCircle, Search } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/lib/auth-context';
-import { getUserConversations, ConversationPreview } from '@/app/chat-actions';
+import { useChatsData } from '@/lib/chats-data-context';
 
 // Generate consistent color from name
 function getAvatarColor(name: string): string {
@@ -24,27 +24,17 @@ function getAvatarColor(name: string): string {
 
 export default function ChatsPage() {
     const { user, isLoading: authLoading } = useAuth();
+    const { data, isLoading, fetchConversations } = useChatsData();
     const [searchQuery, setSearchQuery] = useState('');
-    const [conversations, setConversations] = useState<ConversationPreview[]>([]);
-    const [isLoading, setIsLoading] = useState(true);
+
+    // Destructure cached conversations
+    const conversations = data.conversations;
 
     useEffect(() => {
-        async function loadConversations() {
-            if (user?.id) {
-                const result = await getUserConversations(user.id);
-                if (result.success && result.conversations) {
-                    setConversations(result.conversations);
-                }
-                setIsLoading(false);
-            }
-        }
-
         if (!authLoading && user) {
-            loadConversations();
-        } else if (!authLoading) {
-            setIsLoading(false);
+            fetchConversations(user.id);
         }
-    }, [user, authLoading]);
+    }, [user, authLoading, fetchConversations]);
 
     const filteredConversations = conversations.filter(conv =>
         conv.recipientName.toLowerCase().includes(searchQuery.toLowerCase())

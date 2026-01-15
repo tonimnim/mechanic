@@ -1,6 +1,7 @@
 'use server'
 
 import { PrismaClient } from '@prisma/client'
+import { unstable_cache } from 'next/cache'
 
 // Prisma singleton pattern to prevent connection pool exhaustion in dev
 const globalForPrisma = globalThis as unknown as { prisma: PrismaClient }
@@ -47,9 +48,9 @@ export type ContactHistoryItem = {
   phone: string
 }
 
-// --- FETCH MECHANICS ---
+// --- FETCH MECHANICS (CACHED) ---
 
-export async function getMechanics(): Promise<MechanicResult[]> {
+const getMechanicsInternal = async (): Promise<MechanicResult[]> => {
   try {
     const mechanics = await prisma.mechanicProfile.findMany({
       include: { user: true },
@@ -74,6 +75,13 @@ export async function getMechanics(): Promise<MechanicResult[]> {
     return []
   }
 }
+
+// Cache mechanics list for 60 seconds
+export const getMechanics = unstable_cache(
+  getMechanicsInternal,
+  ['mechanics-list'],
+  { revalidate: 60, tags: ['mechanics'] }
+)
 
 // --- CONTACT LOGGING ---
 
