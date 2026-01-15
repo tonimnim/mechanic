@@ -6,6 +6,7 @@ import { ArrowLeft, Send, Phone, MoreVertical, ImageIcon, X, Loader2 } from 'luc
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/lib/auth-context';
+import { createClient } from '@/lib/supabase/client';
 import {
     getConversationMessages,
     sendMessage,
@@ -75,6 +76,57 @@ export default function ChatPage({ params }: ChatPageProps) {
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }, [messages]);
+
+    // Real-time subscription for new messages
+    useEffect(() => {
+        if (!user?.id || !conversationId) return;
+
+        const supabase = createClient();
+        if (!supabase) return;
+
+        // Subscribe to new messages in this conversation
+        const channel = supabase
+            .channel(`chat-${conversationId}`)
+            .on(
+                'postgres_changes',
+                {
+                    event: 'INSERT',
+                    schema: 'public',
+                    table: 'Message',
+                    filter: `conversationId=eq.${conversationId}`
+                },
+                (payload: { new: Record<string, unknown> }) => {
+                    const newMsg = payload.new;
+
+                    // Don't add if it's our own message (already added optimistically)
+                    if (newMsg.senderId === user.id) return;
+
+                    // Transform to ChatMessage format
+                    const chatMessage: ChatMessage = {
+                        id: newMsg.id as string,
+                        senderId: newMsg.senderId as string,
+                        content: newMsg.content as string | null,
+                        imageUrl: newMsg.imageUrl as string | null,
+                        messageType: (newMsg.messageType as string) || 'text',
+                        createdAt: newMsg.createdAt as string,
+                        isMe: false,
+                        isRead: (newMsg.isRead as boolean) || false
+                    };
+
+                    // Add to messages if not already present
+                    setMessages(prev => {
+                        if (prev.some(m => m.id === chatMessage.id)) return prev;
+                        return [...prev, chatMessage];
+                    });
+                }
+            )
+            .subscribe();
+
+        // Cleanup subscription on unmount
+        return () => {
+            supabase.removeChannel(channel);
+        };
+    }, [user?.id, conversationId]);
 
     // Handle image selection
     const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
