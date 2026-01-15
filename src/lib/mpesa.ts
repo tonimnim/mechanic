@@ -110,7 +110,7 @@ export async function initiateSTKPush(request: STKPushRequest): Promise<STKPushR
             BusinessShortCode: SHORTCODE,
             Password: password,
             Timestamp: timestamp,
-            TransactionType: 'CustomerBuyGoodsOnline', // For Till Number
+            TransactionType: 'CustomerPayBillOnline', // For Paybill Number (174379 sandbox)
             Amount: request.amount,
             PartyA: formattedPhone,  // Customer's phone
             PartyB: SHORTCODE,       // Till Number
