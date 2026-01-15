@@ -11,9 +11,9 @@ export default function manifest(): MetadataRoute.Manifest {
     theme_color: '#2563eb', // Blue-600
     icons: [
       {
-        src: '/logo.svg',
-        sizes: 'any',
-        type: 'image/svg+xml',
+        src: '/logo.jpg',
+        sizes: '612x612',
+        type: 'image/jpeg',
       },
     ],
   }
