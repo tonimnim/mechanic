@@ -46,6 +46,110 @@ async function isAdmin(adminId: string): Promise<boolean> {
     return user?.role === 'admin'
 }
 
+// --- FINANCE STATS TYPES ---
+
+export type FinanceStats = {
+    totalRevenue: number
+    monthlyRevenue: number
+    weeklyRevenue: number
+    pendingAmount: number
+    completedPayments: number
+    pendingPayments: number
+    failedPayments: number
+    weeklyPayments: { day: string; amount: number; count: number }[]
+}
+
+// --- GET FINANCE STATS ---
+
+export async function getFinanceStats(adminId: string): Promise<{ success: boolean; stats?: FinanceStats; error?: string }> {
+    if (!await isAdmin(adminId)) {
+        return { success: false, error: 'Unauthorized' }
+    }
+
+    try {
+        const now = new Date()
+        const weekAgo = new Date(now)
+        weekAgo.setDate(weekAgo.getDate() - 7)
+
+        const monthAgo = new Date(now)
+        monthAgo.setMonth(monthAgo.getMonth() - 1)
+
+        // Get payment stats
+        const [
+            allCompleted,
+            monthCompleted,
+            weekCompleted,
+            pendingPayments,
+            failedPayments
+        ] = await Promise.all([
+            prisma.payment.aggregate({
+                where: { status: 'completed' },
+                _sum: { amount: true },
+                _count: true
+            }),
+            prisma.payment.aggregate({
+                where: { status: 'completed', paidAt: { gte: monthAgo } },
+                _sum: { amount: true }
+            }),
+            prisma.payment.aggregate({
+                where: { status: 'completed', paidAt: { gte: weekAgo } },
+                _sum: { amount: true }
+            }),
+            prisma.payment.aggregate({
+                where: { status: 'pending' },
+                _sum: { amount: true },
+                _count: true
+            }),
+            prisma.payment.count({ where: { status: 'failed' } })
+        ])
+
+        // Get weekly breakdown
+        const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+        const weeklyPayments: { day: string; amount: number; count: number }[] = []
+
+        for (let i = 6; i >= 0; i--) {
+            const date = new Date(now)
+            date.setDate(date.getDate() - i)
+            date.setHours(0, 0, 0, 0)
+
+            const nextDate = new Date(date)
+            nextDate.setDate(nextDate.getDate() + 1)
+
+            const dayStats = await prisma.payment.aggregate({
+                where: {
+                    status: 'completed',
+                    paidAt: { gte: date, lt: nextDate }
+                },
+                _sum: { amount: true },
+                _count: true
+            })
+
+            weeklyPayments.push({
+                day: dayNames[date.getDay()],
+                amount: dayStats._sum.amount || 0,
+                count: dayStats._count || 0
+            })
+        }
+
+        return {
+            success: true,
+            stats: {
+                totalRevenue: allCompleted._sum.amount || 0,
+                monthlyRevenue: monthCompleted._sum.amount || 0,
+                weeklyRevenue: weekCompleted._sum.amount || 0,
+                pendingAmount: pendingPayments._sum.amount || 0,
+                completedPayments: allCompleted._count || 0,
+                pendingPayments: pendingPayments._count || 0,
+                failedPayments,
+                weeklyPayments
+            }
+        }
+    } catch (error) {
+        console.error('Failed to get finance stats:', error)
+        return { success: false, error: 'Failed to load finance stats' }
+    }
+}
+
 // --- GET DASHBOARD STATS ---
 
 export async function getAdminDashboardStats(adminId: string): Promise<{ success: boolean; stats?: DashboardStats; error?: string }> {

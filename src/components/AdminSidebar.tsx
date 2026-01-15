@@ -5,6 +5,7 @@ import {
     LayoutDashboard,
     Shield,
     Users,
+    DollarSign,
     LogOut
 } from 'lucide-react';
 
@@ -45,6 +46,12 @@ export function AdminSidebar({ activeTab, onTabChange, pendingCount = 0 }: Admin
                     onClick={() => onTabChange('mechanics')}
                     icon={<Users className="w-4 h-4" />}
                     label="Mechanics"
+                />
+                <NavItem
+                    active={activeTab === 'finances'}
+                    onClick={() => onTabChange('finances')}
+                    icon={<DollarSign className="w-4 h-4" />}
+                    label="Finances"
                 />
             </nav>
 

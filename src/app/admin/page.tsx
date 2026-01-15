@@ -8,6 +8,7 @@ import { AdminHeader } from '@/components/admin/AdminHeader';
 import { StatCard } from '@/components/admin/StatCard';
 import { WeeklyChart } from '@/components/admin/WeeklyChart';
 import MechanicsContent from '@/components/admin/MechanicsContent';
+import { FinancesPanel } from '@/components/admin/FinancesPanel';
 import {
     getAdminDashboardStats,
     getPendingVerifications,
@@ -156,6 +157,7 @@ export default function AdminDashboard() {
                         <h1 className="text-xl font-semibold text-white">
                             {activeTab === 'overview' && 'Overview'}
                             {activeTab === 'verifications' && 'Verifications'}
+                            {activeTab === 'finances' && 'Finances'}
                         </h1>
                     </div>
                 )}
@@ -354,6 +356,11 @@ export default function AdminDashboard() {
                 {/* Mechanics Tab */}
                 {activeTab === 'mechanics' && user?.id && (
                     <MechanicsContent adminId={user.id} />
+                )}
+
+                {/* Finances Tab */}
+                {activeTab === 'finances' && (
+                    <FinancesPanel />
                 )}
             </main>
         </div>

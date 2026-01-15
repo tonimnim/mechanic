@@ -122,7 +122,13 @@ export async function checkPaymentStatus(
         const queryResult = await querySTKPushStatus(checkoutRequestId);
 
         if (queryResult.success && queryResult.resultCode !== undefined) {
-            const isSuccess = queryResult.resultCode === '0';
+            const resultCode = queryResult.resultCode;
+            const isSuccess = resultCode === '0';
+
+            // These result codes indicate final failure (user cancelled or STK timeout)
+            // 1032 = Transaction cancelled by user
+            // 1037 = STK Push timeout (user didn't respond in time on their phone)
+            const isFinalFailure = ['1032', '1037'].includes(resultCode);
 
             if (isSuccess) {
                 // Payment successful - update records
@@ -155,8 +161,8 @@ export async function checkPaymentStatus(
                 });
 
                 return { success: true, status: 'completed' };
-            } else {
-                // Payment failed
+            } else if (isFinalFailure) {
+                // User cancelled or STK timed out - mark as failed
                 await prisma.payment.update({
                     where: { id: payment.id },
                     data: {
@@ -168,9 +174,10 @@ export async function checkPaymentStatus(
 
                 return { success: true, status: 'failed' };
             }
+            // For other result codes (e.g. transaction still pending), continue polling
         }
 
-        // Still pending
+        // Still pending - M-Pesa query failed or returned non-final result
         return { success: true, status: 'pending' };
     } catch (error) {
         console.error('Payment status check error:', error);
