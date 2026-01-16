@@ -8,6 +8,7 @@ import Link from 'next/link';
 
 import { PushNotificationManager } from '@/components/PushNotificationManager';
 import { FirstVisitCheck } from '@/components/FirstVisitCheck';
+import { Footer } from '@/components/Footer';
 
 interface HomeViewProps {
   mechanicsData: MechanicResult[];
@@ -92,6 +93,9 @@ export function HomeView({ mechanicsData }: HomeViewProps) {
             </div>
           </div>
         </section>
+
+        {/* Footer */}
+        <Footer />
       </div>
 
       {/* MOBILE VIEW - Mechanics PWA */}
