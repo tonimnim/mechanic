@@ -3,7 +3,8 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Mail, Lock, Eye, EyeOff, Wrench, AlertCircle, Loader2 } from 'lucide-react';
+import Image from 'next/image';
+import { Mail, Lock, Eye, EyeOff, AlertCircle, Loader2, LogIn } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { createClient } from '@/lib/supabase/client';
@@ -69,24 +70,40 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen bg-slate-900 flex flex-col overflow-hidden">
-      {/* Background */}
+      {/* Background Pattern - matching register page */}
       <div className="absolute inset-0 overflow-hidden">
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-orange-500/10 rounded-full blur-3xl" />
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-rose-500/10 rounded-full blur-3xl" />
+        <div className="absolute bottom-0 right-0 w-[400px] h-[400px] bg-slate-700/30 rounded-full blur-3xl" />
       </div>
 
       {/* Content */}
       <div className="relative z-10 flex-1 flex flex-col justify-center px-6 py-8 max-w-lg mx-auto w-full">
-        {/* Logo */}
+        {/* Logo/Brand */}
         <div className="text-center mb-8">
-          <div className="w-14 h-14 bg-orange-500 rounded-2xl flex items-center justify-center mx-auto mb-3 shadow-lg shadow-orange-500/30">
-            <Wrench className="w-7 h-7 text-white" />
+          <Link href="/" className="inline-block mb-6">
+            <div className="flex items-center justify-center gap-2">
+              <div className="w-10 h-10 bg-rose-600 rounded-xl flex items-center justify-center overflow-hidden">
+                <Image
+                  src="/logo.svg"
+                  alt="eGarage Logo"
+                  width={24}
+                  height={24}
+                  className="w-6 h-6"
+                />
+              </div>
+              <span className="text-2xl font-bold text-white">eGarage</span>
+            </div>
+          </Link>
+
+          <div className="w-16 h-16 bg-white/10 rounded-2xl flex items-center justify-center mx-auto mb-6 backdrop-blur-sm border border-white/10">
+            <LogIn className="w-8 h-8 text-rose-400" />
           </div>
-          <h1 className="text-2xl font-bold text-white">Welcome Back</h1>
-          <p className="text-gray-400 text-sm mt-1">Sign in to your account</p>
+          <h1 className="text-3xl font-bold text-white mb-2">Welcome Back</h1>
+          <p className="text-slate-400">Sign in to your account</p>
         </div>
 
         {/* Login Form */}
-        <div className="bg-white rounded-3xl p-6 shadow-xl">
+        <div className="bg-white rounded-3xl p-6 shadow-xl shadow-black/20">
           {/* Error Message */}
           {error && (
             <div className="mb-4 p-3 bg-red-50 border border-red-100 rounded-xl flex items-center gap-2 text-red-600 text-sm">
@@ -137,7 +154,7 @@ export default function LoginPage() {
 
             {/* Forgot Password */}
             <div className="text-right">
-              <Link href="/auth/forgot-password" className="text-sm text-orange-600 hover:underline">
+              <Link href="/auth/forgot-password" className="text-sm text-rose-600 hover:text-rose-500 hover:underline transition-colors">
                 Forgot password?
               </Link>
             </div>
@@ -146,7 +163,7 @@ export default function LoginPage() {
             <Button
               type="submit"
               disabled={isLoading}
-              className="w-full h-12 bg-orange-500 hover:bg-orange-600 text-white font-semibold rounded-xl disabled:opacity-50"
+              className="w-full h-12 bg-rose-600 hover:bg-rose-700 text-white font-semibold rounded-xl disabled:opacity-50 shadow-lg shadow-rose-500/25"
             >
               {isLoading ? (
                 <>
@@ -162,20 +179,32 @@ export default function LoginPage() {
           {/* Register Link */}
           <div className="mt-6 text-center">
             <p className="text-gray-500 text-sm">
-              Don't have an account?{' '}
-              <Link href="/register" className="text-orange-600 font-medium hover:underline">
+              Don&apos;t have an account?{' '}
+              <Link href="/register" className="text-rose-600 font-medium hover:text-rose-500 hover:underline transition-colors">
                 Register
               </Link>
             </p>
           </div>
         </div>
 
+        {/* Trust Indicators */}
+        <div className="mt-6 flex items-center justify-center gap-6 text-slate-500 text-xs">
+          <div className="flex items-center gap-1.5">
+            <div className="w-1.5 h-1.5 bg-green-500 rounded-full" />
+            <span>Secure login</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <div className="w-1.5 h-1.5 bg-green-500 rounded-full" />
+            <span>24/7 support</span>
+          </div>
+        </div>
+
         {/* Footer */}
         <div className="mt-6 text-center">
-          <p className="text-gray-600 text-xs">
+          <p className="text-slate-600 text-xs">
             By signing in, you agree to our{' '}
-            <span className="text-gray-400 underline">Terms</span> and{' '}
-            <span className="text-gray-400 underline">Privacy Policy</span>
+            <Link href="/terms" className="text-slate-400 hover:text-slate-300 underline transition-colors">Terms</Link> and{' '}
+            <Link href="/privacy" className="text-slate-400 hover:text-slate-300 underline transition-colors">Privacy Policy</Link>
           </p>
         </div>
       </div>
