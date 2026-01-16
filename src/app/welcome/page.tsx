@@ -1,19 +1,24 @@
 'use client';
 
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Car, Wrench, ChevronRight } from 'lucide-react';
-import { markAsVisited } from '@/components/FirstVisitCheck';
+import { Car, Wrench, ChevronRight, MapPin, Loader2 } from 'lucide-react';
+import { useLocationContext } from '@/lib/location-context';
 
 export default function WelcomePage() {
     const router = useRouter();
+    const { requestPermission } = useLocationContext();
+    const [isRequestingLocation, setIsRequestingLocation] = useState(false);
 
-    const handleDriverClick = () => {
-        markAsVisited();
-        router.push('/');
+    const handleDriverClick = async () => {
+        setIsRequestingLocation(true);
+        // Request location permission before navigating
+        await requestPermission();
+        // Navigate to find page regardless of permission result
+        router.push('/find');
     };
 
     const handleMechanicClick = () => {
-        markAsVisited();
         router.push('/register/mechanic');
     };
 
@@ -57,16 +62,25 @@ export default function WelcomePage() {
                     {/* Driver Option */}
                     <button
                         onClick={handleDriverClick}
-                        className="w-full bg-white hover:bg-gray-50 rounded-2xl p-5 flex items-center gap-4 transition-all active:scale-[0.98] shadow-lg"
+                        disabled={isRequestingLocation}
+                        className="w-full bg-white hover:bg-gray-50 rounded-2xl p-5 flex items-center gap-4 transition-all active:scale-[0.98] shadow-lg disabled:opacity-90"
                     >
                         <div className="w-14 h-14 bg-blue-100 rounded-xl flex items-center justify-center flex-shrink-0">
-                            <Car className="w-7 h-7 text-blue-600" />
+                            {isRequestingLocation ? (
+                                <Loader2 className="w-7 h-7 text-blue-600 animate-spin" />
+                            ) : (
+                                <Car className="w-7 h-7 text-blue-600" />
+                            )}
                         </div>
                         <div className="flex-1 text-left">
-                            <h3 className="font-bold text-gray-900 text-lg">I'm a Driver</h3>
-                            <p className="text-gray-500 text-sm">Find mechanics near me</p>
+                            <h3 className="font-bold text-gray-900 text-lg">
+                                {isRequestingLocation ? 'Getting location...' : "I'm a Driver"}
+                            </h3>
+                            <p className="text-gray-500 text-sm">
+                                {isRequestingLocation ? 'Please allow location access' : 'Find mechanics near me'}
+                            </p>
                         </div>
-                        <ChevronRight className="w-5 h-5 text-gray-400" />
+                        {!isRequestingLocation && <ChevronRight className="w-5 h-5 text-gray-400" />}
                     </button>
 
                     {/* Mechanic Option */}

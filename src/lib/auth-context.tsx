@@ -22,6 +22,7 @@ interface AuthContextType {
   isLoading: boolean;
   setUser: (user: AuthUser | null) => void;
   logout: () => void;
+  refreshUser: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType>({
@@ -29,6 +30,7 @@ const AuthContext = createContext<AuthContextType>({
   isLoading: true,
   setUser: () => { },
   logout: () => { },
+  refreshUser: async () => { },
 });
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
@@ -90,8 +92,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     router.push('/login');
   };
 
+  const refreshUser = async () => {
+    if (!user) return;
+
+    try {
+      const profile = await getUserProfile(user.id);
+      if (profile) {
+        setUserState(profile as AuthUser);
+      }
+    } catch (error) {
+      console.error('Error refreshing user profile:', error);
+    }
+  };
+
   return (
-    <AuthContext.Provider value={{ user, isLoading, setUser, logout }}>
+    <AuthContext.Provider value={{ user, isLoading, setUser, logout, refreshUser }}>
       {children}
     </AuthContext.Provider>
   );

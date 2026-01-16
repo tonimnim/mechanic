@@ -2,30 +2,16 @@
 
 import { MapPin, CheckCircle, Clock, Shield, Wrench, Users, MessageSquare, Star, Car, Smartphone, Zap, Bell } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { MechanicCard } from '@/components/MechanicCard';
-import type { MechanicResult } from '@/app/actions';
 import Link from 'next/link';
 
-import { PushNotificationManager } from '@/components/PushNotificationManager';
-import { FirstVisitCheck } from '@/components/FirstVisitCheck';
 import { Footer } from '@/components/Footer';
+import { DeviceRouter } from '@/components/DeviceRouter';
 
-interface HomeViewProps {
-  mechanicsData: MechanicResult[];
-}
-
-export function HomeView({ mechanicsData }: HomeViewProps) {
-  // Show only available/online mechanics first on home
-  const sortedMechanics = [...mechanicsData].sort((a, b) => {
-    if (a.availability === 'online' && b.availability !== 'online') return -1;
-    if (b.availability === 'online' && a.availability !== 'online') return 1;
-    return b.rating - a.rating;
-  });
-
+export function HomeView() {
   return (
-    <FirstVisitCheck>
+    <DeviceRouter>
       {/* DESKTOP VIEW - Landing Page Hero */}
-      <div className="hidden md:block min-h-screen bg-gradient-to-b from-slate-50 to-white">
+      <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white">
         {/* Hero Section */}
         <section className="container mx-auto px-6 py-16 lg:py-24">
           <div className="grid lg:grid-cols-2 gap-12 items-center">
@@ -432,92 +418,133 @@ export function HomeView({ mechanicsData }: HomeViewProps) {
         </section>
 
         {/* Mobile App Preview Section */}
-        <section className="py-20 lg:py-28 bg-white overflow-hidden">
+        <section className="py-12 lg:py-16 bg-white overflow-hidden">
           <div className="container mx-auto px-6">
-            <div className="grid lg:grid-cols-2 gap-12 items-center">
+            <div className="grid lg:grid-cols-2 gap-8 lg:gap-12 items-center">
               {/* Content */}
-              <div className="space-y-6">
+              <div className="space-y-5">
                 <p className="text-rose-600 font-medium text-sm uppercase tracking-wider">
                   Mobile Experience
                 </p>
                 <h2 className="text-3xl lg:text-4xl font-bold text-slate-900">
                   Your Garage in Your Pocket
                 </h2>
-                <p className="text-slate-600 text-lg">
+                <p className="text-slate-600 text-lg leading-relaxed">
                   Use eGarage on any device — no download required. Our progressive web app gives you a native app experience right in your browser.
                 </p>
 
                 {/* Features List */}
-                <div className="space-y-4 pt-4">
+                <div className="space-y-3">
                   <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 bg-rose-50 rounded-lg flex items-center justify-center">
+                    <div className="w-8 h-8 bg-rose-50 rounded-lg flex items-center justify-center flex-shrink-0">
                       <Smartphone className="w-4 h-4 text-rose-600" />
                     </div>
                     <span className="text-slate-700">Works on any device — phone, tablet, or desktop</span>
                   </div>
                   <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 bg-rose-50 rounded-lg flex items-center justify-center">
+                    <div className="w-8 h-8 bg-rose-50 rounded-lg flex items-center justify-center flex-shrink-0">
                       <Zap className="w-4 h-4 text-rose-600" />
                     </div>
                     <span className="text-slate-700">Lightweight and fast — no heavy downloads</span>
                   </div>
                   <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 bg-rose-50 rounded-lg flex items-center justify-center">
+                    <div className="w-8 h-8 bg-rose-50 rounded-lg flex items-center justify-center flex-shrink-0">
                       <Bell className="w-4 h-4 text-rose-600" />
                     </div>
                     <span className="text-slate-700">Push notifications for messages and updates</span>
                   </div>
                 </div>
 
-                <div className="pt-4">
+                <div className="pt-2">
                   <Link href="/find">
-                    <Button size="lg" className="bg-slate-900 hover:bg-slate-800 text-white px-8 py-6 text-lg rounded-xl">
+                    <Button size="lg" className="bg-slate-900 hover:bg-slate-800 text-white px-8 py-5 text-base rounded-xl">
                       Try It Now — Free
                     </Button>
                   </Link>
                 </div>
               </div>
 
-              {/* Phone Mockup */}
+              {/* Phone Mockup - Real App Preview */}
               <div className="relative flex justify-center lg:justify-end">
                 <div className="relative">
                   {/* Phone Frame */}
-                  <div className="w-64 h-[520px] bg-slate-900 rounded-[3rem] p-3 shadow-2xl">
-                    <div className="w-full h-full bg-slate-100 rounded-[2.5rem] overflow-hidden relative">
+                  <div className="w-[280px] h-[560px] bg-slate-900 rounded-[2.5rem] p-2 shadow-2xl">
+                    <div className="w-full h-full bg-gray-50 rounded-[2rem] overflow-hidden relative">
                       {/* Status Bar */}
-                      <div className="bg-slate-900 h-8 flex items-center justify-center">
-                        <div className="w-20 h-5 bg-slate-800 rounded-full" />
+                      <div className="bg-slate-900 h-7 flex items-center justify-center">
+                        <div className="w-16 h-4 bg-slate-800 rounded-full" />
                       </div>
-                      {/* App Content Preview */}
-                      <div className="p-4 space-y-3">
-                        <div className="bg-slate-200 h-8 rounded-lg w-2/3" />
-                        <div className="bg-slate-200 h-4 rounded w-1/2" />
-                        <div className="space-y-2 pt-4">
-                          <div className="bg-white rounded-xl p-3 shadow-sm border border-slate-100">
-                            <div className="flex items-center gap-3">
-                              <div className="w-10 h-10 bg-rose-100 rounded-full" />
-                              <div className="flex-1 space-y-1">
-                                <div className="bg-slate-200 h-3 rounded w-24" />
-                                <div className="bg-slate-100 h-2 rounded w-16" />
+
+                      {/* App Header */}
+                      <div className="bg-slate-900 px-4 py-3">
+                        <p className="text-white font-semibold text-sm">Nearby Mechanics</p>
+                        <p className="text-gray-400 text-[10px] flex items-center gap-1">
+                          <MapPin size={8} /> Nairobi, Kenya
+                        </p>
+                      </div>
+
+                      {/* Mechanic Cards */}
+                      <div className="p-3 space-y-2 overflow-hidden">
+                        {/* Card 1 */}
+                        <div className="bg-white rounded-xl p-3 shadow-sm border border-gray-100">
+                          <div className="flex gap-3">
+                            <div className="w-12 h-12 bg-gradient-to-br from-rose-500 to-rose-600 rounded-xl flex items-center justify-center text-white font-bold text-sm">
+                              JK
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-1">
+                                <p className="font-semibold text-sm text-slate-900 truncate">John's Auto</p>
+                                <CheckCircle className="w-3 h-3 text-rose-500 flex-shrink-0" />
                               </div>
-                              <div className="bg-green-100 px-2 py-1 rounded text-xs text-green-700">Online</div>
+                              <p className="text-[10px] text-gray-500">Engine • Brakes • Electrical</p>
+                              <div className="flex items-center gap-2 mt-1">
+                                <span className="flex items-center text-[9px] text-amber-600">
+                                  <Star className="w-2.5 h-2.5 fill-current" /> 4.9
+                                </span>
+                                <span className="text-[9px] bg-green-100 text-green-700 px-1.5 py-0.5 rounded">Online</span>
+                              </div>
                             </div>
                           </div>
-                          <div className="bg-white rounded-xl p-3 shadow-sm border border-slate-100">
-                            <div className="flex items-center gap-3">
-                              <div className="w-10 h-10 bg-slate-200 rounded-full" />
-                              <div className="flex-1 space-y-1">
-                                <div className="bg-slate-200 h-3 rounded w-20" />
-                                <div className="bg-slate-100 h-2 rounded w-14" />
+                        </div>
+
+                        {/* Card 2 */}
+                        <div className="bg-white rounded-xl p-3 shadow-sm border border-gray-100">
+                          <div className="flex gap-3">
+                            <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center text-white font-bold text-sm">
+                              SW
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-1">
+                                <p className="font-semibold text-sm text-slate-900 truncate">Swift Mechanics</p>
+                              </div>
+                              <p className="text-[10px] text-gray-500">Towing • Battery • Tires</p>
+                              <div className="flex items-center gap-2 mt-1">
+                                <span className="flex items-center text-[9px] text-amber-600">
+                                  <Star className="w-2.5 h-2.5 fill-current" /> 4.7
+                                </span>
+                                <span className="text-[9px] text-gray-500">2.3 km away</span>
                               </div>
                             </div>
                           </div>
-                          <div className="bg-white rounded-xl p-3 shadow-sm border border-slate-100">
-                            <div className="flex items-center gap-3">
-                              <div className="w-10 h-10 bg-slate-200 rounded-full" />
-                              <div className="flex-1 space-y-1">
-                                <div className="bg-slate-200 h-3 rounded w-28" />
-                                <div className="bg-slate-100 h-2 rounded w-12" />
+                        </div>
+
+                        {/* Card 3 */}
+                        <div className="bg-white rounded-xl p-3 shadow-sm border border-gray-100">
+                          <div className="flex gap-3">
+                            <div className="w-12 h-12 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-xl flex items-center justify-center text-white font-bold text-sm">
+                              MG
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-1">
+                                <p className="font-semibold text-sm text-slate-900 truncate">Mega Garage</p>
+                                <CheckCircle className="w-3 h-3 text-rose-500 flex-shrink-0" />
+                              </div>
+                              <p className="text-[10px] text-gray-500">Full Service • AC Repair</p>
+                              <div className="flex items-center gap-2 mt-1">
+                                <span className="flex items-center text-[9px] text-amber-600">
+                                  <Star className="w-2.5 h-2.5 fill-current" /> 4.8
+                                </span>
+                                <span className="text-[9px] bg-green-100 text-green-700 px-1.5 py-0.5 rounded">Online</span>
                               </div>
                             </div>
                           </div>
@@ -526,7 +553,7 @@ export function HomeView({ mechanicsData }: HomeViewProps) {
                     </div>
                   </div>
                   {/* Decorative blur */}
-                  <div className="absolute -bottom-8 -right-8 w-48 h-48 bg-rose-100 rounded-full blur-3xl opacity-50 -z-10" />
+                  <div className="absolute -bottom-6 -right-6 w-32 h-32 bg-rose-100 rounded-full blur-2xl opacity-60 -z-10" />
                 </div>
               </div>
             </div>
@@ -536,57 +563,7 @@ export function HomeView({ mechanicsData }: HomeViewProps) {
         {/* Footer */}
         <Footer />
       </div>
-
-      {/* MOBILE VIEW - Mechanics PWA */}
-      <div className="md:hidden min-h-screen bg-gray-50 pb-24">
-        {/* Header */}
-        <div className="bg-slate-900">
-          <div className="max-w-lg mx-auto px-4 py-5">
-            <div className="flex items-center justify-between">
-              <div>
-                <h1 className="font-bold text-xl text-white">Nearby Mechanics</h1>
-                <p className="text-sm text-gray-400 flex items-center gap-1 mt-1">
-                  <MapPin size={12} />
-                  Nairobi, Kenya
-                </p>
-              </div>
-              <div className="flex items-center gap-3">
-                <span className="text-sm text-gray-400">
-                  {mechanicsData.length} available
-                </span>
-                <Button variant="ghost" size="icon" className="rounded-full hover:bg-white/10">
-                  <div className="w-9 h-9 bg-gray-700 rounded-full overflow-hidden ring-2 ring-white/20">
-                    <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Anthony" alt="User" />
-                  </div>
-                </Button>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Main Content */}
-        <main className="max-w-lg mx-auto px-4 pt-4">
-
-          {/* Mechanics List */}
-          <div className="space-y-3">
-            {sortedMechanics.length > 0 ? (
-              sortedMechanics.map((mechanic) => (
-                <MechanicCard key={mechanic.id} mechanic={mechanic} />
-              ))
-            ) : (
-              <div className="text-center py-16 bg-white rounded-2xl">
-                <p className="text-gray-500">No mechanics available right now.</p>
-              </div>
-            )}
-          </div>
-
-          {/* PWA Push Notification Prompt */}
-          <div className="mt-8 pt-6 border-t border-gray-200">
-            <PushNotificationManager />
-          </div>
-        </main>
-      </div>
-    </FirstVisitCheck>
+    </DeviceRouter>
   );
 }
 

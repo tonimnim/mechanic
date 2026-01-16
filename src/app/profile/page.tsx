@@ -2,6 +2,7 @@
 
 import { useAuth } from '@/lib/auth-context';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import {
   Car,
   LogOut,
@@ -10,11 +11,15 @@ import {
   ChevronRight,
   Camera,
   BadgeCheck,
-  Pencil
+  Pencil,
+  X,
+  Check,
+  Loader2
 } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
+import { useEffect, useState, useRef } from 'react';
+import { updateDriverProfile, uploadAvatar } from '@/app/driver-actions';
 
 // Generate consistent color from name
 function getAvatarColor(name: string): string {
@@ -39,8 +44,25 @@ function getInitials(name: string): string {
 }
 
 export default function ProfilePage() {
-  const { user, logout, isLoading } = useAuth();
+  const { user, logout, isLoading, refreshUser } = useAuth();
   const router = useRouter();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Edit mode state
+  const [isEditing, setIsEditing] = useState(false);
+  const [editName, setEditName] = useState('');
+  const [editPhone, setEditPhone] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
+  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  // Initialize edit fields when user loads
+  useEffect(() => {
+    if (user) {
+      setEditName(user.fullName);
+      setEditPhone(user.phone || '');
+    }
+  }, [user]);
 
   useEffect(() => {
     if (!isLoading && !user) {
@@ -65,8 +87,97 @@ export default function ProfilePage() {
     yearsActive: 2,
   };
 
-  // Phone from user profile
-  const phone = user.phone || '+254 712 345 678';
+  const handleStartEdit = () => {
+    setEditName(user.fullName);
+    setEditPhone(user.phone || '');
+    setError(null);
+    setIsEditing(true);
+  };
+
+  const handleCancelEdit = () => {
+    setIsEditing(false);
+    setError(null);
+  };
+
+  const handleSaveProfile = async () => {
+    if (!editName.trim()) {
+      setError('Name is required');
+      return;
+    }
+
+    setIsSaving(true);
+    setError(null);
+
+    try {
+      const result = await updateDriverProfile(user.id, {
+        fullName: editName.trim(),
+        phone: editPhone.trim() || undefined,
+      });
+
+      if (result.success) {
+        // Refresh user data in auth context
+        if (refreshUser) {
+          await refreshUser();
+        }
+        setIsEditing(false);
+      } else {
+        setError(result.error || 'Failed to update profile');
+      }
+    } catch {
+      setError('An error occurred while saving');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleAvatarClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+    if (!allowedTypes.includes(file.type)) {
+      setError('Please upload a JPEG, PNG, WebP, or GIF image');
+      return;
+    }
+
+    // Validate file size (5MB max)
+    if (file.size > 5 * 1024 * 1024) {
+      setError('Image must be less than 5MB');
+      return;
+    }
+
+    setIsUploadingAvatar(true);
+    setError(null);
+
+    try {
+      const formData = new FormData();
+      formData.append('avatar', file);
+
+      const result = await uploadAvatar(user.id, formData);
+
+      if (result.success) {
+        // Refresh user data to get new avatar
+        if (refreshUser) {
+          await refreshUser();
+        }
+      } else {
+        setError(result.error || 'Failed to upload image');
+      }
+    } catch {
+      setError('An error occurred while uploading');
+    } finally {
+      setIsUploadingAvatar(false);
+      // Reset file input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gray-50 pb-24">
@@ -75,14 +186,43 @@ export default function ProfilePage() {
         <div className="max-w-lg mx-auto px-4 pt-5 pb-16">
           <div className="flex items-center justify-between">
             <h1 className="font-bold text-xl text-white">My Profile</h1>
-            <Button
-              variant="outline"
-              size="sm"
-              className="bg-orange-500 border-orange-500 text-white hover:bg-orange-600 hover:text-white"
-            >
-              <Pencil size={14} className="mr-1" />
-              Edit
-            </Button>
+            {isEditing ? (
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleCancelEdit}
+                  disabled={isSaving}
+                  className="bg-transparent border-gray-600 text-gray-300 hover:bg-gray-800 hover:text-white"
+                >
+                  <X size={14} className="mr-1" />
+                  Cancel
+                </Button>
+                <Button
+                  size="sm"
+                  onClick={handleSaveProfile}
+                  disabled={isSaving}
+                  className="bg-green-500 border-green-500 text-white hover:bg-green-600"
+                >
+                  {isSaving ? (
+                    <Loader2 size={14} className="mr-1 animate-spin" />
+                  ) : (
+                    <Check size={14} className="mr-1" />
+                  )}
+                  Save
+                </Button>
+              </div>
+            ) : (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleStartEdit}
+                className="bg-orange-500 border-orange-500 text-white hover:bg-orange-600 hover:text-white"
+              >
+                <Pencil size={14} className="mr-1" />
+                Edit
+              </Button>
+            )}
           </div>
         </div>
       </div>
@@ -92,26 +232,78 @@ export default function ProfilePage() {
         <div className="flex flex-col items-center">
           {/* Avatar with Camera */}
           <div className="relative">
-            <div className={`w-24 h-24 rounded-full ${avatarColor} flex items-center justify-center border-4 border-white shadow-lg`}>
-              <span className="text-white font-bold text-3xl">{initials}</span>
-            </div>
+            {user.avatarUrl ? (
+              <div className="w-24 h-24 rounded-full border-4 border-white shadow-lg overflow-hidden">
+                <img
+                  src={user.avatarUrl}
+                  alt={user.fullName}
+                  className="w-full h-full object-cover"
+                />
+              </div>
+            ) : (
+              <div className={`w-24 h-24 rounded-full ${avatarColor} flex items-center justify-center border-4 border-white shadow-lg`}>
+                <span className="text-white font-bold text-3xl">{initials}</span>
+              </div>
+            )}
             {/* Camera Button */}
-            <button className="absolute bottom-0 right-0 w-8 h-8 bg-slate-900 rounded-full flex items-center justify-center border-2 border-white">
-              <Camera size={14} className="text-white" />
+            <button
+              onClick={handleAvatarClick}
+              disabled={isUploadingAvatar}
+              className="absolute bottom-0 right-0 w-8 h-8 bg-slate-900 rounded-full flex items-center justify-center border-2 border-white disabled:opacity-50"
+            >
+              {isUploadingAvatar ? (
+                <Loader2 size={14} className="text-white animate-spin" />
+              ) : (
+                <Camera size={14} className="text-white" />
+              )}
             </button>
+            {/* Hidden file input */}
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/jpeg,image/png,image/webp,image/gif"
+              onChange={handleFileChange}
+              className="hidden"
+            />
           </div>
 
           {/* Name */}
-          <h2 className="mt-4 text-xl font-bold text-gray-900">{user.fullName}</h2>
+          {isEditing ? (
+            <Input
+              value={editName}
+              onChange={(e) => setEditName(e.target.value)}
+              className="mt-4 text-center text-xl font-bold max-w-xs"
+              placeholder="Your name"
+            />
+          ) : (
+            <h2 className="mt-4 text-xl font-bold text-gray-900">{user.fullName}</h2>
+          )}
 
           {/* Phone */}
-          <p className="text-gray-500 mt-1">{phone}</p>
+          {isEditing ? (
+            <Input
+              value={editPhone}
+              onChange={(e) => setEditPhone(e.target.value)}
+              className="mt-2 text-center max-w-xs"
+              placeholder="+254 712 345 678"
+              type="tel"
+            />
+          ) : (
+            <p className="text-gray-500 mt-1">{user.phone || 'No phone added'}</p>
+          )}
+
+          {/* Error message */}
+          {error && (
+            <p className="mt-2 text-sm text-red-500">{error}</p>
+          )}
 
           {/* Verified Badge */}
-          <div className="mt-3 inline-flex items-center gap-1.5 px-3 py-1.5 bg-green-500 text-white rounded-full text-sm font-medium">
-            <BadgeCheck size={16} />
-            Verified Driver
-          </div>
+          {user.isVerified && (
+            <div className="mt-3 inline-flex items-center gap-1.5 px-3 py-1.5 bg-green-500 text-white rounded-full text-sm font-medium">
+              <BadgeCheck size={16} />
+              Verified Driver
+            </div>
+          )}
         </div>
 
         {/* Stats Row */}

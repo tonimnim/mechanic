@@ -1,4 +1,3 @@
-import { getMechanics } from './actions';
 import { HomeView } from '@/components/HomeView';
 import {
   generateLocalBusinessSchema,
@@ -11,9 +10,6 @@ import {
 export const revalidate = 60;
 
 export default async function Page() {
-  // Fetch mechanics for the mobile PWA view
-  const mechanicsData = await getMechanics();
-
   // Generate structured data for SEO
   const localBusinessSchema = generateLocalBusinessSchema();
   const webSiteSchema = generateWebSiteSchema();
@@ -41,7 +37,7 @@ export default async function Page() {
         }}
       />
 
-      <HomeView mechanicsData={mechanicsData} />
+      <HomeView />
     </>
   );
 }

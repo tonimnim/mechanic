@@ -4,6 +4,7 @@ import "./globals.css";
 import { AuthProvider } from "@/lib/auth-context";
 import { MechanicDashboardProvider } from "@/lib/mechanic-dashboard-context";
 import { ChatsDataProvider } from "@/lib/chats-data-context";
+import { LocationProvider } from "@/lib/location-context";
 import { BottomNav } from "@/components/BottomNav";
 import { TopNav } from "@/components/TopNav";
 
@@ -160,15 +161,17 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased bg-slate-50`}
       >
         <AuthProvider>
-          <MechanicDashboardProvider>
-            <ChatsDataProvider>
-              <TopNav />
-              <div className="pb-16 md:pb-0"> {/* Padding for Bottom Nav only on mobile */}
-                {children}
-              </div>
-              <BottomNav />
-            </ChatsDataProvider>
-          </MechanicDashboardProvider>
+          <LocationProvider>
+            <MechanicDashboardProvider>
+              <ChatsDataProvider>
+                <TopNav />
+                <div className="pb-16 md:pb-0"> {/* Padding for Bottom Nav only on mobile */}
+                  {children}
+                </div>
+                <BottomNav />
+              </ChatsDataProvider>
+            </MechanicDashboardProvider>
+          </LocationProvider>
         </AuthProvider>
       </body>
     </html>
