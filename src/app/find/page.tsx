@@ -3,7 +3,8 @@ import { getMechanics } from '@/app/actions';
 import { FindView } from '@/components/FindView';
 import { generateServiceSchema } from '@/lib/seo-schema';
 
-export const dynamic = 'force-dynamic';
+// Use ISR: cache page for 60 seconds, then revalidate in background
+export const revalidate = 60;
 
 // SEO Metadata for Find Mechanics page
 export const metadata: Metadata = {

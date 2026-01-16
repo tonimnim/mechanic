@@ -7,7 +7,8 @@ import {
   homepageFAQ
 } from '@/lib/seo-schema';
 
-export const dynamic = 'force-dynamic'; // Ensure we always fetch fresh data
+// Use ISR: cache page for 60 seconds, then revalidate in background
+export const revalidate = 60;
 
 export default async function Page() {
   // Fetch mechanics for the mobile PWA view
