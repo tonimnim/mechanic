@@ -31,13 +31,13 @@ export function TopNav() {
         <Link href="/" className="flex items-center gap-2">
           <img src="/logo.jpg" alt="eGarage" className="h-9 w-9 rounded-lg object-cover" />
           <span className="font-bold text-xl tracking-tight text-slate-900">
-            eGarage<span className="text-blue-600">.ke</span>
+            eGarage
           </span>
         </Link>
 
         {/* Desktop Navigation Links */}
         <nav className="flex items-center gap-6 text-sm font-medium text-slate-600">
-          <Link href="/" className="hover:text-blue-600 transition-colors">Find Mechanics</Link>
+          <Link href="/" className="hover:text-rose-600 transition-colors">Find Mechanics</Link>
           <Link href="/about" className="hover:text-slate-900 transition-colors">How it Works</Link>
         </nav>
 
@@ -50,16 +50,16 @@ export function TopNav() {
           {user ? (
             <div className="flex items-center gap-2">
               <Link href="/chats">
-                <Button variant="ghost" size="icon" className="text-slate-500 hover:text-blue-600 hover:bg-blue-50 relative">
+                <Button variant="ghost" size="icon" className="text-slate-500 hover:text-rose-600 hover:bg-rose-50 relative">
                   <MessageSquare size={20} />
-                  <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full border border-white" />
+                  <span className="absolute top-2 right-2 w-2 h-2 bg-rose-500 rounded-full border border-white" />
                 </Button>
               </Link>
 
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" className="relative h-8 w-8 rounded-full">
-                    <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center text-blue-700 font-bold border border-blue-200">
+                    <div className="w-8 h-8 bg-rose-100 rounded-full flex items-center justify-center text-rose-700 font-bold border border-rose-200">
                       {user.fullName.charAt(0)}
                     </div>
                   </Button>
@@ -94,7 +94,7 @@ export function TopNav() {
                 <Button variant="ghost">Log in</Button>
               </Link>
               <Link href="/register">
-                <Button className="bg-blue-600 hover:bg-blue-700">Get Started</Button>
+                <Button className="bg-rose-600 hover:bg-rose-700">Get Started</Button>
               </Link>
             </div>
           )}
@@ -103,3 +103,4 @@ export function TopNav() {
     </header>
   );
 }
+
