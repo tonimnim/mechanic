@@ -97,8 +97,8 @@ export default function ClientRegistrationPage() {
                     role: 'client'
                 });
 
-                // 3. Redirect to find mechanics
-                router.push('/find');
+                // 3. Redirect to home page
+                router.push('/');
                 router.refresh();
             }
         } catch (err) {

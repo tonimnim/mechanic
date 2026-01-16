@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import {
     ArrowLeft,
@@ -16,7 +16,8 @@ import {
     Lock,
     Eye,
     EyeOff,
-    Loader2
+    Loader2,
+    Clock
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -95,8 +96,19 @@ export default function MechanicRegistrationPage() {
     const [error, setError] = useState<string | null>(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
+    const [rateLimitSeconds, setRateLimitSeconds] = useState(0);
 
     const totalSteps = 4;
+
+    // Countdown timer for rate limit
+    useEffect(() => {
+        if (rateLimitSeconds > 0) {
+            const timer = setTimeout(() => {
+                setRateLimitSeconds(prev => prev - 1);
+            }, 1000);
+            return () => clearTimeout(timer);
+        }
+    }, [rateLimitSeconds]);
 
     const updateField = (field: keyof FormData, value: string | string[]) => {
         setFormData(prev => ({ ...prev, [field]: value }));
@@ -176,6 +188,7 @@ export default function MechanicRegistrationPage() {
 
     const handleSubmit = async () => {
         if (!validateStep()) return;
+        if (rateLimitSeconds > 0 || isSubmitting) return;
 
         setIsSubmitting(true);
         setError(null);
@@ -197,7 +210,15 @@ export default function MechanicRegistrationPage() {
             });
 
             if (authError) {
-                setError(authError.message);
+                // Check for rate limit error
+                const rateLimitMatch = authError.message.match(/(\d+)\s*second/i);
+                if (rateLimitMatch || authError.message.includes('security') || authError.status === 429) {
+                    const seconds = rateLimitMatch ? parseInt(rateLimitMatch[1]) : 30;
+                    setRateLimitSeconds(seconds);
+                    setError(null);
+                } else {
+                    setError(authError.message);
+                }
                 return;
             }
 
@@ -225,7 +246,9 @@ export default function MechanicRegistrationPage() {
             });
 
             if (result.success) {
-                setStep(totalSteps + 1); // Success step
+                // Redirect to home page
+                router.push('/');
+                router.refresh();
             } else {
                 setError(result.error || 'Failed to create profile. Please try again.');
             }
@@ -281,8 +304,25 @@ export default function MechanicRegistrationPage() {
 
             {/* Content */}
             <div className="max-w-lg mx-auto px-4 py-6">
+                {/* Rate Limit Warning */}
+                {rateLimitSeconds > 0 && (
+                    <div className="mb-4 p-4 bg-amber-50 border border-amber-200 rounded-xl">
+                        <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 bg-amber-100 rounded-full flex items-center justify-center flex-shrink-0">
+                                <Clock className="w-5 h-5 text-amber-600" />
+                            </div>
+                            <div>
+                                <p className="font-medium text-amber-800">Please wait</p>
+                                <p className="text-amber-600 text-sm">
+                                    You can try again in <span className="font-bold">{rateLimitSeconds}</span> seconds
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
                 {/* Error Message */}
-                {error && (
+                {error && !rateLimitSeconds && (
                     <div className="mb-4 p-3 bg-red-50 border border-red-100 rounded-xl flex items-center gap-2 text-red-600 text-sm">
                         <AlertCircle size={16} />
                         {error}
@@ -608,13 +648,18 @@ export default function MechanicRegistrationPage() {
                         ) : (
                             <Button
                                 onClick={handleSubmit}
-                                disabled={isSubmitting}
-                                className="w-full bg-orange-500 hover:bg-orange-600 h-12 text-base disabled:opacity-50"
+                                disabled={isSubmitting || rateLimitSeconds > 0}
+                                className="w-full bg-orange-500 hover:bg-orange-600 h-12 text-base disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                                 {isSubmitting ? (
                                     <>
                                         <Loader2 className="w-5 h-5 mr-2 animate-spin" />
                                         Creating Account...
+                                    </>
+                                ) : rateLimitSeconds > 0 ? (
+                                    <>
+                                        <Clock className="w-5 h-5 mr-2" />
+                                        Wait {rateLimitSeconds}s
                                     </>
                                 ) : (
                                     'Create Account'
