@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect, use } from 'react';
+import { useState, useRef, useEffect, use, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft, Send, Phone, MoreVertical, ImageIcon, X, Loader2 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
@@ -45,9 +45,12 @@ export default function ChatPage({ params }: ChatPageProps) {
     const [error, setError] = useState<string | null>(null);
     const [selectedImage, setSelectedImage] = useState<File | null>(null);
     const [imagePreview, setImagePreview] = useState<string | null>(null);
+    const [isOtherUserTyping, setIsOtherUserTyping] = useState(false);
 
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
+    const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+    const typingChannelRef = useRef<ReturnType<ReturnType<typeof createClient>['channel']> | null>(null);
 
     // Load conversation and messages
     useEffect(() => {
@@ -127,6 +130,63 @@ export default function ChatPage({ params }: ChatPageProps) {
             supabase.removeChannel(channel);
         };
     }, [user?.id, conversationId]);
+
+    // Typing indicator subscription (Supabase broadcast)
+    useEffect(() => {
+        if (!user?.id || !conversationId) return;
+
+        const supabase = createClient();
+        if (!supabase) return;
+
+        // Create typing broadcast channel
+        const typingChannel = supabase
+            .channel(`typing-${conversationId}`)
+            .on('broadcast', { event: 'typing' }, (payload: { payload?: { userId?: string } }) => {
+                // Only show typing if it's from the other user
+                if (payload.payload?.userId !== user.id) {
+                    setIsOtherUserTyping(true);
+                    // Auto-hide after 3 seconds
+                    if (typingTimeoutRef.current) {
+                        clearTimeout(typingTimeoutRef.current);
+                    }
+                    typingTimeoutRef.current = setTimeout(() => {
+                        setIsOtherUserTyping(false);
+                    }, 3000);
+                }
+            })
+            .on('broadcast', { event: 'stop_typing' }, (payload: { payload?: { userId?: string } }) => {
+                if (payload.payload?.userId !== user.id) {
+                    setIsOtherUserTyping(false);
+                }
+            })
+            .subscribe();
+
+        typingChannelRef.current = typingChannel;
+
+        return () => {
+            if (typingTimeoutRef.current) {
+                clearTimeout(typingTimeoutRef.current);
+            }
+            supabase.removeChannel(typingChannel);
+        };
+    }, [user?.id, conversationId]);
+
+    // Broadcast typing event
+    const broadcastTyping = useCallback(() => {
+        if (typingChannelRef.current && user?.id) {
+            typingChannelRef.current.send({
+                type: 'broadcast',
+                event: 'typing',
+                payload: { userId: user.id }
+            });
+        }
+    }, [user?.id]);
+
+    // Handle input change with typing broadcast
+    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        setNewMessage(e.target.value);
+        broadcastTyping();
+    };
 
     // Handle image selection
     const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -325,6 +385,20 @@ export default function ChatPage({ params }: ChatPageProps) {
                             </div>
                         ))
                     )}
+
+                    {/* Typing Indicator */}
+                    {isOtherUserTyping && (
+                        <div className="flex justify-start">
+                            <div className="bg-white text-gray-500 rounded-2xl rounded-bl-md shadow-sm border border-gray-100 px-4 py-2.5">
+                                <div className="flex items-center gap-1">
+                                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
                     <div ref={messagesEndRef} />
                 </div>
             </div>
@@ -373,7 +447,7 @@ export default function ChatPage({ params }: ChatPageProps) {
                             placeholder="Type a message..."
                             className="flex-1 bg-gray-50 border-gray-200 rounded-full px-4"
                             value={newMessage}
-                            onChange={(e) => setNewMessage(e.target.value)}
+                            onChange={handleInputChange}
                             onKeyPress={handleKeyPress}
                         />
                         <Button
