@@ -33,7 +33,7 @@ module.exports = {
         } else if (path === '/about') {
             priority = 0.8;
             changefreq = 'weekly';
-        } else if (path.startsWith('/register')) {
+        } else if (path === '/welcome' || path.startsWith('/register')) {
             priority = 0.8;
             changefreq = 'weekly';
         } else if (path === '/login') {
@@ -54,7 +54,7 @@ module.exports = {
         { loc: '/', changefreq: 'daily', priority: 1.0 },
         { loc: '/find', changefreq: 'daily', priority: 0.9 },
         { loc: '/about', changefreq: 'weekly', priority: 0.8 },
-        { loc: '/register', changefreq: 'weekly', priority: 0.8 },
+        { loc: '/welcome', changefreq: 'weekly', priority: 0.8 },
         { loc: '/register/mechanic', changefreq: 'weekly', priority: 0.8 },
         { loc: '/register/client', changefreq: 'weekly', priority: 0.7 },
         { loc: '/login', changefreq: 'monthly', priority: 0.6 },

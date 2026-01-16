@@ -93,7 +93,7 @@ export function TopNav() {
               <Link href="/login">
                 <Button variant="ghost">Log in</Button>
               </Link>
-              <Link href="/register">
+              <Link href="/welcome">
                 <Button className="bg-rose-600 hover:bg-rose-700">Get Started</Button>
               </Link>
             </div>
