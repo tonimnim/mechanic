@@ -94,6 +94,136 @@ export function HomeView({ mechanicsData }: HomeViewProps) {
           </div>
         </section>
 
+        {/* How It Works Section */}
+        <section className="py-20 lg:py-28 bg-white">
+          <div className="container mx-auto px-6">
+            {/* Section Header */}
+            <div className="text-center max-w-2xl mx-auto mb-16">
+              <p className="text-rose-600 font-medium text-sm uppercase tracking-wider mb-3">
+                Simple Process
+              </p>
+              <h2 className="text-3xl lg:text-4xl font-bold text-slate-900 mb-4">
+                How It Works
+              </h2>
+              <p className="text-slate-600 text-lg">
+                Whether you need a mechanic or you are one, getting started takes just a few steps.
+              </p>
+            </div>
+
+            {/* Two Track Layout */}
+            <div className="grid lg:grid-cols-2 gap-12 lg:gap-16">
+
+              {/* For Drivers */}
+              <div className="space-y-8">
+                <div className="flex items-center gap-3 mb-8">
+                  <div className="h-px flex-1 bg-slate-200" />
+                  <h3 className="text-lg font-semibold text-slate-900 whitespace-nowrap">For Drivers</h3>
+                  <div className="h-px flex-1 bg-slate-200" />
+                </div>
+
+                {/* Step 1 */}
+                <div className="flex gap-5">
+                  <div className="flex-shrink-0">
+                    <div className="w-12 h-12 rounded-xl bg-slate-100 flex items-center justify-center">
+                      <span className="text-lg font-bold text-slate-400">01</span>
+                    </div>
+                  </div>
+                  <div>
+                    <h4 className="font-semibold text-slate-900 mb-1">Search</h4>
+                    <p className="text-slate-600 text-sm leading-relaxed">
+                      Find mechanics near your location or filter by specialization. Browse profiles and check ratings.
+                    </p>
+                  </div>
+                </div>
+
+                {/* Step 2 */}
+                <div className="flex gap-5">
+                  <div className="flex-shrink-0">
+                    <div className="w-12 h-12 rounded-xl bg-slate-100 flex items-center justify-center">
+                      <span className="text-lg font-bold text-slate-400">02</span>
+                    </div>
+                  </div>
+                  <div>
+                    <h4 className="font-semibold text-slate-900 mb-1">Connect</h4>
+                    <p className="text-slate-600 text-sm leading-relaxed">
+                      Chat directly with mechanics through the app. Discuss your issue, get quotes, and agree on terms.
+                    </p>
+                  </div>
+                </div>
+
+                {/* Step 3 */}
+                <div className="flex gap-5">
+                  <div className="flex-shrink-0">
+                    <div className="w-12 h-12 rounded-xl bg-rose-50 flex items-center justify-center border border-rose-100">
+                      <span className="text-lg font-bold text-rose-600">03</span>
+                    </div>
+                  </div>
+                  <div>
+                    <h4 className="font-semibold text-slate-900 mb-1">Get Fixed</h4>
+                    <p className="text-slate-600 text-sm leading-relaxed">
+                      Book the service at your convenience. Pay securely via M-Pesa once the job is complete.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* For Mechanics */}
+              <div className="space-y-8">
+                <div className="flex items-center gap-3 mb-8">
+                  <div className="h-px flex-1 bg-slate-200" />
+                  <h3 className="text-lg font-semibold text-slate-900 whitespace-nowrap">For Mechanics</h3>
+                  <div className="h-px flex-1 bg-slate-200" />
+                </div>
+
+                {/* Step 1 */}
+                <div className="flex gap-5">
+                  <div className="flex-shrink-0">
+                    <div className="w-12 h-12 rounded-xl bg-slate-100 flex items-center justify-center">
+                      <span className="text-lg font-bold text-slate-400">01</span>
+                    </div>
+                  </div>
+                  <div>
+                    <h4 className="font-semibold text-slate-900 mb-1">Register</h4>
+                    <p className="text-slate-600 text-sm leading-relaxed">
+                      Create your professional profile. Add your specialties, experience, service area, and pricing.
+                    </p>
+                  </div>
+                </div>
+
+                {/* Step 2 */}
+                <div className="flex gap-5">
+                  <div className="flex-shrink-0">
+                    <div className="w-12 h-12 rounded-xl bg-slate-100 flex items-center justify-center">
+                      <span className="text-lg font-bold text-slate-400">02</span>
+                    </div>
+                  </div>
+                  <div>
+                    <h4 className="font-semibold text-slate-900 mb-1">Get Verified</h4>
+                    <p className="text-slate-600 text-sm leading-relaxed">
+                      Upload your documents for verification. Earn the verified badge and build instant trust.
+                    </p>
+                  </div>
+                </div>
+
+                {/* Step 3 */}
+                <div className="flex gap-5">
+                  <div className="flex-shrink-0">
+                    <div className="w-12 h-12 rounded-xl bg-rose-50 flex items-center justify-center border border-rose-100">
+                      <span className="text-lg font-bold text-rose-600">03</span>
+                    </div>
+                  </div>
+                  <div>
+                    <h4 className="font-semibold text-slate-900 mb-1">Grow</h4>
+                    <p className="text-slate-600 text-sm leading-relaxed">
+                      Receive client requests directly. Build your reputation through reviews and expand your business.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
         {/* Footer */}
         <Footer />
       </div>
