@@ -127,6 +127,26 @@ export async function checkUserExists(phoneOrEmail: string): Promise<{ exists: b
     }
 }
 
+// --- CHECK IF PHONE OR EMAIL EXISTS (for registration pre-check) ---
+
+export async function checkPhoneAndEmailExist(
+    phone: string,
+    email: string
+): Promise<{ phoneExists: boolean; emailExists: boolean }> {
+    try {
+        const [userByPhone, userByEmail] = await Promise.all([
+            prisma.user.findUnique({ where: { phone } }),
+            prisma.user.findUnique({ where: { email } })
+        ])
+        return {
+            phoneExists: !!userByPhone,
+            emailExists: !!userByEmail
+        }
+    } catch {
+        return { phoneExists: false, emailExists: false }
+    }
+}
+
 
 
 // --- GET USER PROFILE (Synced with Supabase) ---

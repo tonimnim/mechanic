@@ -23,6 +23,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { createClient } from '@/lib/supabase/client';
 import { registerMechanic } from '@/app/mechanic-actions';
+import { checkPhoneAndEmailExist } from '@/app/auth-actions';
 
 // Specialty options
 const MECHANIC_SPECIALTIES = [
@@ -194,16 +195,34 @@ export default function MechanicRegistrationPage() {
         setError(null);
 
         try {
-            // Step 1: Create Supabase Auth user
+            // Step 1: Check if phone or email already exists in local database
+            const { phoneExists, emailExists } = await checkPhoneAndEmailExist(
+                formData.phone.trim(),
+                formData.email.trim().toLowerCase()
+            );
+
+            if (phoneExists) {
+                setError('Phone number already registered');
+                setIsSubmitting(false);
+                return;
+            }
+
+            if (emailExists) {
+                setError('Email already registered');
+                setIsSubmitting(false);
+                return;
+            }
+
+            // Step 2: Create Supabase Auth user
             const supabase = createClient();
 
             const { data: authData, error: authError } = await supabase.auth.signUp({
-                email: formData.email,
+                email: formData.email.trim().toLowerCase(),
                 password: formData.password,
                 options: {
                     data: {
-                        full_name: formData.fullName,
-                        phone: formData.phone,
+                        full_name: formData.fullName.trim(),
+                        phone: formData.phone.trim(),
                         role: formData.serviceType,
                     }
                 }
@@ -227,18 +246,18 @@ export default function MechanicRegistrationPage() {
                 return;
             }
 
-            // Step 2: Create mechanic profile in our database
+            // Step 3: Create mechanic profile in our database
             const result = await registerMechanic({
                 userId: authData.user.id, // Pass Supabase ID
-                email: formData.email,
-                phone: formData.phone,
-                fullName: formData.fullName,
+                email: formData.email.trim().toLowerCase(),
+                phone: formData.phone.trim(),
+                fullName: formData.fullName.trim(),
                 serviceType: formData.serviceType,
-                businessName: formData.businessName || undefined,
+                businessName: formData.businessName?.trim() || undefined,
                 specialties: formData.specialties,
                 yearsExperience: parseInt(formData.yearsExperience) || 0,
                 city: formData.city,
-                address: formData.address,
+                address: formData.address.trim(),
                 lat: -1.2921,
                 lng: 36.8219,
                 callOutFee: parseInt(formData.callOutFee) || 0,
