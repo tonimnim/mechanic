@@ -29,9 +29,7 @@ export function TopNav() {
 
         {/* Logo Section */}
         <Link href="/" className="flex items-center gap-2">
-          <div className="bg-blue-600 p-1.5 rounded-lg text-white">
-            <Wrench size={20} />
-          </div>
+          <img src="/logo.jpg" alt="eGarage" className="h-9 w-9 rounded-lg object-cover" />
           <span className="font-bold text-xl tracking-tight text-slate-900">
             eGarage<span className="text-blue-600">.ke</span>
           </span>

@@ -6,7 +6,6 @@ import { MechanicCard } from '@/components/MechanicCard';
 import type { MechanicResult } from '@/app/actions';
 
 import { PushNotificationManager } from '@/components/PushNotificationManager';
-import { WebMarketplace } from '@/components/WebMarketplace';
 import { FirstVisitCheck } from '@/components/FirstVisitCheck';
 
 interface HomeViewProps {
@@ -23,9 +22,9 @@ export function HomeView({ mechanicsData }: HomeViewProps) {
 
   return (
     <FirstVisitCheck>
-      {/* DESKTOP VIEW - Spare Parts Marketplace (Web Only) */}
-      <div className="hidden md:block">
-        <WebMarketplace />
+      {/* DESKTOP VIEW - Empty for now */}
+      <div className="hidden md:block min-h-screen bg-white">
+        {/* Future content */}
       </div>
 
       {/* MOBILE VIEW - Mechanics PWA */}
