@@ -2,15 +2,20 @@
 
 import { useState, useMemo } from 'react';
 import Fuse from 'fuse.js';
-import { Search, SlidersHorizontal, MapPin, X } from 'lucide-react';
+import { Search, SlidersHorizontal, MapPin, X, Navigation } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { MechanicCard } from '@/components/MechanicCard';
 import type { MechanicResult } from '@/app/actions';
+import { useLocationContext } from '@/lib/location-context';
+import { addDistanceToItems, sortByDistance } from '@/lib/geo-utils';
 
 interface FindViewProps {
     mechanicsData: MechanicResult[];
 }
+
+// Extended type with distance
+export type MechanicWithDistance = MechanicResult & { distance: number | null };
 
 // Fuse.js configuration
 const fuseOptions = {
@@ -24,18 +29,29 @@ const fuseOptions = {
     minMatchCharLength: 2,
 };
 
+type SortOption = 'availability' | 'nearest' | 'rating';
+
 export function FindView({ mechanicsData }: FindViewProps) {
     const [query, setQuery] = useState('');
     const [availableOnly, setAvailableOnly] = useState(false);
     const [topRatedOnly, setTopRatedOnly] = useState(false);
+    const [sortBy, setSortBy] = useState<SortOption>('availability');
     const [showAdvanced, setShowAdvanced] = useState(false);
 
-    // Initialize Fuse.js
-    const fuse = useMemo(() => new Fuse(mechanicsData, fuseOptions), [mechanicsData]);
+    // Get user's location
+    const { lat: userLat, lng: userLng, city: userCity, requestPermission, permissionStatus } = useLocationContext();
+
+    // Add distance to mechanics
+    const mechanicsWithDistance = useMemo(() => {
+        return addDistanceToItems(mechanicsData, userLat, userLng);
+    }, [mechanicsData, userLat, userLng]);
+
+    // Initialize Fuse.js with distance-enhanced data
+    const fuse = useMemo(() => new Fuse(mechanicsWithDistance, fuseOptions), [mechanicsWithDistance]);
 
     // Perform search and filter
     const results = useMemo(() => {
-        let filtered = mechanicsData;
+        let filtered: MechanicWithDistance[] = mechanicsWithDistance;
 
         // Text search
         if (query.trim().length >= 2) {
@@ -53,15 +69,24 @@ export function FindView({ mechanicsData }: FindViewProps) {
             filtered = filtered.filter(m => m.rating >= 4.5);
         }
 
-        // Sort: Available first, then by rating
-        filtered = [...filtered].sort((a, b) => {
-            if (a.availability === 'online' && b.availability !== 'online') return -1;
-            if (b.availability === 'online' && a.availability !== 'online') return 1;
-            return b.rating - a.rating;
-        });
+        // Sort based on selected option
+        if (sortBy === 'nearest') {
+            // Sort by distance (nearest first), then by availability
+            filtered = sortByDistance(filtered);
+        } else if (sortBy === 'rating') {
+            // Sort by rating (highest first)
+            filtered = [...filtered].sort((a, b) => b.rating - a.rating);
+        } else {
+            // Default: Sort by availability first, then by rating
+            filtered = [...filtered].sort((a, b) => {
+                if (a.availability === 'online' && b.availability !== 'online') return -1;
+                if (b.availability === 'online' && a.availability !== 'online') return 1;
+                return b.rating - a.rating;
+            });
+        }
 
         return filtered;
-    }, [query, availableOnly, topRatedOnly, fuse, mechanicsData]);
+    }, [query, availableOnly, topRatedOnly, sortBy, fuse, mechanicsWithDistance]);
 
     const hasFilters = availableOnly || topRatedOnly || query;
 
@@ -70,6 +95,25 @@ export function FindView({ mechanicsData }: FindViewProps) {
         setAvailableOnly(false);
         setTopRatedOnly(false);
     };
+
+    const handleNearestClick = () => {
+        if (sortBy === 'nearest') {
+            setSortBy('availability');
+        } else {
+            // If no location, request it first
+            if (!userLat || !userLng) {
+                requestPermission().then(() => {
+                    setSortBy('nearest');
+                });
+            } else {
+                setSortBy('nearest');
+            }
+        }
+    };
+
+    // Determine location display text
+    const locationText = userCity || 'Kenya';
+    const sortText = sortBy === 'nearest' ? 'Sorted by distance' : sortBy === 'rating' ? 'Sorted by rating' : 'Sorted by availability';
 
     return (
         <div className="min-h-screen bg-gray-50 pb-24">
@@ -101,6 +145,18 @@ export function FindView({ mechanicsData }: FindViewProps) {
             <div className="bg-white border-b border-gray-100 sticky top-0 z-10">
                 <div className="max-w-lg mx-auto px-4 py-3">
                     <div className="flex items-center gap-2">
+                        {/* Nearest */}
+                        <button
+                            onClick={handleNearestClick}
+                            className={`flex items-center gap-1.5 px-4 py-2.5 rounded-full text-sm font-medium transition-all ${sortBy === 'nearest'
+                                    ? 'bg-blue-500 text-white shadow-md'
+                                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                }`}
+                        >
+                            <Navigation size={14} className={sortBy === 'nearest' ? '' : 'text-blue-500'} />
+                            Nearest
+                        </button>
+
                         {/* Available Now */}
                         <button
                             onClick={() => setAvailableOnly(!availableOnly)}
@@ -152,7 +208,7 @@ export function FindView({ mechanicsData }: FindViewProps) {
                         </h2>
                         <p className="text-sm text-gray-500 flex items-center gap-1 mt-0.5">
                             <MapPin size={12} />
-                            Nairobi • Sorted by availability
+                            {locationText} • {sortText}
                         </p>
                     </div>
                     {hasFilters && (
@@ -164,6 +220,15 @@ export function FindView({ mechanicsData }: FindViewProps) {
                         </button>
                     )}
                 </div>
+
+                {/* Location prompt if sorting by nearest but no location */}
+                {sortBy === 'nearest' && !userLat && permissionStatus === 'denied' && (
+                    <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-xl">
+                        <p className="text-sm text-yellow-800">
+                            Location access denied. Enable location in your browser settings to see distances.
+                        </p>
+                    </div>
+                )}
 
                 {/* Mechanics List */}
                 <div className="space-y-3">

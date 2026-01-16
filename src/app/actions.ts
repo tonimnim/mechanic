@@ -17,6 +17,8 @@ export type MechanicResult = {
   name: string
   subtitle: string // Specialties
   location: string
+  lat: number | null
+  lng: number | null
   phone: string
   isVerified: boolean
   rating: number
@@ -64,6 +66,8 @@ const getMechanicsInternal = async (): Promise<MechanicResult[]> => {
       name: m.user.fullName,
       subtitle: m.specialties.split(',').map(s => s.trim()).join(', '),
       location: `${m.city} • ${m.address}`,
+      lat: m.lat,
+      lng: m.lng,
       phone: m.phone,
       isVerified: m.user.isVerified,
       rating: m.avgRating || 4.5,

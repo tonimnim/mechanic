@@ -2,14 +2,18 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Phone, MessageCircle, MapPin, Star, Loader2 } from 'lucide-react';
+import { Phone, MessageCircle, MapPin, Star, Loader2, Navigation } from 'lucide-react';
 import type { MechanicResult } from '@/app/actions';
 import { logContact } from '@/app/actions';
 import { useAuth } from '@/lib/auth-context';
 import { startConversation } from '@/app/chat-actions';
+import { formatDistance } from '@/lib/geo-utils';
+
+// Extended mechanic type that may include calculated distance
+type MechanicWithDistance = MechanicResult & { distance?: number | null };
 
 interface MechanicCardProps {
-    mechanic: MechanicResult;
+    mechanic: MechanicWithDistance;
 }
 
 // Generate consistent color from name
@@ -136,17 +140,24 @@ export function MechanicCard({ mechanic }: MechanicCardProps) {
                         )}
                     </div>
 
-                    {/* Rating + Location */}
+                    {/* Rating + Distance/Location */}
                     <div className="flex items-center gap-3 mt-0.5">
                         <div className="flex items-center gap-1">
                             <Star className="w-3.5 h-3.5 text-amber-400" fill="currentColor" />
                             <span className="font-medium text-gray-900 text-xs">{mechanic.rating}</span>
                             <span className="text-gray-400 text-xs">({reviewCount})</span>
                         </div>
-                        <div className="flex items-center gap-1 text-gray-500 text-xs">
-                            <MapPin className="w-3 h-3" />
-                            <span>{mechanic.location}</span>
-                        </div>
+                        {mechanic.distance != null ? (
+                            <div className="flex items-center gap-1 text-blue-600 text-xs font-medium">
+                                <Navigation className="w-3 h-3" />
+                                <span>{formatDistance(mechanic.distance)} away</span>
+                            </div>
+                        ) : (
+                            <div className="flex items-center gap-1 text-gray-500 text-xs">
+                                <MapPin className="w-3 h-3" />
+                                <span>{mechanic.location}</span>
+                            </div>
+                        )}
                     </div>
 
                     {/* Specialties */}
