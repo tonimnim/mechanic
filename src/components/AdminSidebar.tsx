@@ -4,7 +4,8 @@ import { useAuth } from '@/lib/auth-context';
 import {
     LayoutDashboard,
     Shield,
-    Users,
+    Wrench,
+    UsersRound,
     DollarSign,
     LogOut
 } from 'lucide-react';
@@ -35,6 +36,12 @@ export function AdminSidebar({ activeTab, onTabChange, pendingCount = 0 }: Admin
                     label="Overview"
                 />
                 <NavItem
+                    active={activeTab === 'users'}
+                    onClick={() => onTabChange('users')}
+                    icon={<UsersRound className="w-4 h-4" />}
+                    label="Users"
+                />
+                <NavItem
                     active={activeTab === 'verifications'}
                     onClick={() => onTabChange('verifications')}
                     icon={<Shield className="w-4 h-4" />}
@@ -44,7 +51,7 @@ export function AdminSidebar({ activeTab, onTabChange, pendingCount = 0 }: Admin
                 <NavItem
                     active={activeTab === 'mechanics'}
                     onClick={() => onTabChange('mechanics')}
-                    icon={<Users className="w-4 h-4" />}
+                    icon={<Wrench className="w-4 h-4" />}
                     label="Mechanics"
                 />
                 <NavItem

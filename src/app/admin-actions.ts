@@ -775,6 +775,83 @@ export async function getAllClients(adminId: string) {
     }
 }
 
+// --- USER MANAGEMENT TYPES ---
+
+export type UserListItem = {
+    id: string
+    email: string
+    phone: string
+    fullName: string
+    role: string
+    isVerified: boolean
+    avatarUrl: string | null
+    createdAt: string
+    hasMechanicProfile: boolean
+    hasShopProfile: boolean
+}
+
+// --- GET ALL USERS ---
+
+export async function getAllUsers(adminId: string): Promise<{ success: boolean; users?: UserListItem[]; error?: string }> {
+    if (!await isAdmin(adminId)) {
+        return { success: false, error: 'Unauthorized' }
+    }
+
+    try {
+        const users = await prisma.user.findMany({
+            include: {
+                mechanicProfile: { select: { id: true } },
+                shopProfile: { select: { id: true } }
+            },
+            orderBy: { createdAt: 'desc' }
+        })
+
+        return {
+            success: true,
+            users: users.map(u => ({
+                id: u.id,
+                email: u.email,
+                phone: u.phone,
+                fullName: u.fullName,
+                role: u.role,
+                isVerified: u.isVerified,
+                avatarUrl: u.avatarUrl,
+                createdAt: u.createdAt.toISOString(),
+                hasMechanicProfile: !!u.mechanicProfile,
+                hasShopProfile: !!u.shopProfile
+            }))
+        }
+    } catch (error) {
+        console.error('Failed to get all users:', error)
+        return { success: false, error: 'Failed to load users' }
+    }
+}
+
+// --- DELETE USER ---
+
+export async function deleteUser(adminId: string, userId: string): Promise<{ success: boolean; error?: string }> {
+    if (!await isAdmin(adminId)) {
+        return { success: false, error: 'Unauthorized' }
+    }
+
+    // Prevent deleting yourself
+    if (adminId === userId) {
+        return { success: false, error: 'Cannot delete your own account' }
+    }
+
+    try {
+        // Delete user (cascade will handle related records due to onDelete: Cascade in schema)
+        await prisma.user.delete({
+            where: { id: userId }
+        })
+
+        return { success: true }
+    } catch (error) {
+        console.error('Failed to delete user:', error)
+        return { success: false, error: 'Failed to delete user' }
+    }
+}
+
 // --- CREATE ADMIN USER (for initial setup) ---
 
 export async function createAdminUser(email: string, phone: string, fullName: string, secretKey: string) {

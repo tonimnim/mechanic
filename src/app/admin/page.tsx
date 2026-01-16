@@ -9,6 +9,7 @@ import { AdminHeader } from '@/components/admin/AdminHeader';
 import { StatCard } from '@/components/admin/StatCard';
 import { WeeklyChart } from '@/components/admin/WeeklyChart';
 import MechanicsContent from '@/components/admin/MechanicsContent';
+import UsersContent from '@/components/admin/UsersContent';
 import { FinancesPanel } from '@/components/admin/FinancesPanel';
 import {
     approveVerification,
@@ -123,7 +124,7 @@ export default function AdminDashboard() {
                 <AdminHeader pendingCount={stats?.pendingVerifications} />
 
                 {/* Page Title */}
-                {activeTab !== 'mechanics' && (
+                {activeTab !== 'mechanics' && activeTab !== 'users' && (
                     <div className="mb-6">
                         <h1 className="text-xl font-semibold text-white">
                             {activeTab === 'overview' && 'Overview'}
@@ -322,6 +323,11 @@ export default function AdminDashboard() {
                             </Card>
                         )}
                     </div>
+                )}
+
+                {/* Users Tab */}
+                {activeTab === 'users' && user?.id && (
+                    <UsersContent adminId={user.id} />
                 )}
 
                 {/* Mechanics Tab */}
