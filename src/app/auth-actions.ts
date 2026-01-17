@@ -211,13 +211,34 @@ export async function syncUserFromSupabase(
             }
         }
 
+        // Check if phone already exists (different user)
+        if (metadata.phone) {
+            const userByPhone = await prisma.user.findUnique({ where: { phone: metadata.phone } })
+            if (userByPhone) {
+                // Phone exists with different email - update that user's ID
+                await prisma.user.update({
+                    where: { phone: metadata.phone },
+                    data: {
+                        id: userId,
+                        email: metadata.email || userByPhone.email,
+                        fullName: metadata.full_name || userByPhone.fullName
+                    }
+                })
+                console.log(`Updated existing user with phone ${metadata.phone} to Supabase ID ${userId}`)
+                return { success: true, user: await getUserProfile(userId) }
+            }
+        }
+
+        // Generate unique phone if not provided or if we need a fallback
+        const phone = metadata.phone || `+254${Date.now().toString().slice(-9)}`
+
         // Create user from Supabase metadata
         const newUser = await prisma.user.create({
             data: {
                 id: userId,
                 email: metadata.email || `${userId}@placeholder.com`,
                 fullName: metadata.full_name || 'User',
-                phone: metadata.phone || `+254${Date.now().toString().slice(-9)}`, // Fallback unique phone
+                phone: phone,
                 role: metadata.role || 'client',
                 isVerified: false
             }

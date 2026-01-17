@@ -23,7 +23,6 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { createClient } from '@/lib/supabase/client';
 import { registerMechanic } from '@/app/mechanic-actions';
-import { checkPhoneAndEmailExist } from '@/app/auth-actions';
 
 // Specialty options
 const MECHANIC_SPECIALTIES = [
@@ -195,34 +194,19 @@ export default function MechanicRegistrationPage() {
         setError(null);
 
         try {
-            // Step 1: Check if phone or email already exists in local database
-            const { phoneExists, emailExists } = await checkPhoneAndEmailExist(
-                formData.phone.trim(),
-                formData.email.trim().toLowerCase()
-            );
-
-            if (phoneExists) {
-                setError('Phone number already registered');
-                setIsSubmitting(false);
-                return;
-            }
-
-            if (emailExists) {
-                setError('Email already registered');
-                setIsSubmitting(false);
-                return;
-            }
-
-            // Step 2: Create Supabase Auth user
             const supabase = createClient();
+            const email = formData.email.trim().toLowerCase();
+            const phone = formData.phone.trim();
+            const fullName = formData.fullName.trim();
 
+            // Step 1: Create Supabase Auth user first
             const { data: authData, error: authError } = await supabase.auth.signUp({
-                email: formData.email.trim().toLowerCase(),
+                email,
                 password: formData.password,
                 options: {
                     data: {
-                        full_name: formData.fullName.trim(),
-                        phone: formData.phone.trim(),
+                        full_name: fullName,
+                        phone: phone,
                         role: formData.serviceType,
                     }
                 }
@@ -235,9 +219,16 @@ export default function MechanicRegistrationPage() {
                     const seconds = rateLimitMatch ? parseInt(rateLimitMatch[1]) : 30;
                     setRateLimitSeconds(seconds);
                     setError(null);
-                } else {
-                    setError(authError.message);
+                    return;
                 }
+
+                // If user already exists in Supabase
+                if (authError.message.includes('already registered') || authError.message.includes('already exists')) {
+                    setError('Email already registered. Please sign in instead.');
+                    return;
+                }
+
+                setError(authError.message);
                 return;
             }
 
@@ -246,12 +237,12 @@ export default function MechanicRegistrationPage() {
                 return;
             }
 
-            // Step 3: Create mechanic profile in our database
+            // Step 2: Create mechanic profile in our database
             const result = await registerMechanic({
-                userId: authData.user.id, // Pass Supabase ID
-                email: formData.email.trim().toLowerCase(),
-                phone: formData.phone.trim(),
-                fullName: formData.fullName.trim(),
+                userId: authData.user.id,
+                email,
+                phone,
+                fullName,
                 serviceType: formData.serviceType,
                 businessName: formData.businessName?.trim() || undefined,
                 specialties: formData.specialties,
@@ -269,7 +260,9 @@ export default function MechanicRegistrationPage() {
                 router.push('/');
                 router.refresh();
             } else {
-                setError(result.error || 'Failed to create profile. Please try again.');
+                // Log error but still redirect - user exists in Supabase
+                console.error('Failed to create mechanic profile:', result.error);
+                setError(result.error || 'Profile creation failed. Please try logging in.');
             }
         } catch {
             setError('Something went wrong. Please try again.');

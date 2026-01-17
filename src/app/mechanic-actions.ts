@@ -66,26 +66,118 @@ export type VerificationRequestInput = {
 
 export async function registerMechanic(input: MechanicRegistrationInput) {
     try {
-        // Check if email or phone already exists
-        const existingUser = await prisma.user.findFirst({
-            where: {
-                OR: [
-                    { email: input.email },
-                    { phone: input.phone }
-                ]
-            }
-        })
+        // If userId is provided (from Supabase), check if user already exists
+        if (input.userId) {
+            const existingUserById = await prisma.user.findUnique({
+                where: { id: input.userId },
+                include: { mechanicProfile: true }
+            })
 
-        if (existingUser) {
-            return {
-                success: false,
-                error: existingUser.email === input.email
-                    ? 'Email already registered'
-                    : 'Phone number already registered'
+            if (existingUserById) {
+                // User exists - check if they have a mechanic profile
+                if (existingUserById.mechanicProfile) {
+                    return {
+                        success: true,
+                        userId: existingUserById.id,
+                        profileId: existingUserById.mechanicProfile.id
+                    }
+                }
+
+                // User exists but no mechanic profile - create one
+                const profile = await prisma.mechanicProfile.create({
+                    data: {
+                        userId: existingUserById.id,
+                        serviceType: input.serviceType,
+                        businessName: input.businessName,
+                        bio: input.bio,
+                        specialties: input.specialties.join(','),
+                        yearsExperience: input.yearsExperience,
+                        city: input.city,
+                        address: input.address,
+                        serviceAreas: input.serviceAreas?.join(','),
+                        serviceRadius: input.serviceRadius || 10,
+                        lat: input.lat,
+                        lng: input.lng,
+                        phone: input.phone,
+                        whatsapp: input.whatsapp || input.phone,
+                        callOutFee: input.callOutFee || 0,
+                        hourlyRate: input.hourlyRate || 0,
+                        availability: 'offline',
+                    }
+                })
+
+                // Update user role
+                await prisma.user.update({
+                    where: { id: existingUserById.id },
+                    data: { role: input.serviceType }
+                })
+
+                return {
+                    success: true,
+                    userId: existingUserById.id,
+                    profileId: profile.id
+                }
+            }
+
+            // Check if email/phone exists with different ID - update that user
+            const existingByEmailOrPhone = await prisma.user.findFirst({
+                where: {
+                    OR: [
+                        { email: input.email },
+                        { phone: input.phone }
+                    ]
+                },
+                include: { mechanicProfile: true }
+            })
+
+            if (existingByEmailOrPhone) {
+                // Update the existing user's ID to match Supabase
+                await prisma.user.update({
+                    where: { id: existingByEmailOrPhone.id },
+                    data: {
+                        id: input.userId,
+                        email: input.email,
+                        phone: input.phone,
+                        fullName: input.fullName,
+                        role: input.serviceType
+                    }
+                })
+
+                // Create mechanic profile if doesn't exist
+                if (!existingByEmailOrPhone.mechanicProfile) {
+                    const profile = await prisma.mechanicProfile.create({
+                        data: {
+                            userId: input.userId,
+                            serviceType: input.serviceType,
+                            businessName: input.businessName,
+                            bio: input.bio,
+                            specialties: input.specialties.join(','),
+                            yearsExperience: input.yearsExperience,
+                            city: input.city,
+                            address: input.address,
+                            serviceAreas: input.serviceAreas?.join(','),
+                            serviceRadius: input.serviceRadius || 10,
+                            lat: input.lat,
+                            lng: input.lng,
+                            phone: input.phone,
+                            whatsapp: input.whatsapp || input.phone,
+                            callOutFee: input.callOutFee || 0,
+                            hourlyRate: input.hourlyRate || 0,
+                            availability: 'offline',
+                        }
+                    })
+                    return { success: true, userId: input.userId, profileId: profile.id }
+                }
+
+                return {
+                    success: true,
+                    userId: input.userId,
+                    profileId: existingByEmailOrPhone.mechanicProfile.id
+                }
             }
         }
 
-        // Create user with mechanic role
+        // Create new user with mechanic role
         const user = await prisma.user.create({
             data: {
                 id: input.userId, // Use provided ID if available

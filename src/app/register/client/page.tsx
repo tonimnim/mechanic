@@ -8,7 +8,7 @@ import { ArrowLeft, Mail, Lock, User, Phone, Eye, EyeOff, Loader2, AlertCircle, 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { createClient } from '@/lib/supabase/client';
-import { syncUserFromSupabase, checkPhoneAndEmailExist } from '@/app/auth-actions';
+import { syncUserFromSupabase } from '@/app/auth-actions';
 
 export default function ClientRegistrationPage() {
     const router = useRouter();
@@ -60,34 +60,19 @@ export default function ClientRegistrationPage() {
         setIsLoading(true);
 
         try {
-            // 1. Check if phone or email already exists in local database
-            const { phoneExists, emailExists } = await checkPhoneAndEmailExist(
-                formData.phone.trim(),
-                formData.email.trim().toLowerCase()
-            );
-
-            if (phoneExists) {
-                setError('Phone number already registered');
-                setIsLoading(false);
-                return;
-            }
-
-            if (emailExists) {
-                setError('Email already registered');
-                setIsLoading(false);
-                return;
-            }
-
             const supabase = createClient();
+            const email = formData.email.trim().toLowerCase();
+            const phone = formData.phone.trim();
+            const fullName = formData.fullName.trim();
 
-            // 2. Sign up with Supabase
+            // 1. Try to sign up with Supabase first
             const { data: authData, error: authError } = await supabase.auth.signUp({
-                email: formData.email.trim().toLowerCase(),
+                email,
                 password: formData.password,
                 options: {
                     data: {
-                        full_name: formData.fullName.trim(),
-                        phone: formData.phone.trim(),
+                        full_name: fullName,
+                        phone: phone,
                         role: 'client'
                     }
                 }
@@ -99,33 +84,42 @@ export default function ClientRegistrationPage() {
                 if (rateLimitMatch || authError.message.includes('security') || authError.status === 429) {
                     const seconds = rateLimitMatch ? parseInt(rateLimitMatch[1]) : 30;
                     setRateLimitSeconds(seconds);
-                    setError(null); // Clear error, show countdown instead
-                } else {
-                    setError(authError.message);
-                }
-                setIsLoading(false);
-                return;
-            }
-
-            if (authData.user) {
-                // 3. Sync user to local database immediately
-                const syncResult = await syncUserFromSupabase(authData.user.id, {
-                    email: formData.email.trim().toLowerCase(),
-                    full_name: formData.fullName.trim(),
-                    phone: formData.phone.trim(),
-                    role: 'client'
-                });
-
-                if (!syncResult.success) {
-                    console.error('Failed to sync user to local database');
-                    setError('Account created but failed to save profile. Please try logging in.');
+                    setError(null);
                     setIsLoading(false);
                     return;
                 }
 
-                // 4. Redirect to home page
+                // If user already exists in Supabase, try to sign them in instead
+                if (authError.message.includes('already registered') || authError.message.includes('already exists')) {
+                    setError('Email already registered. Please sign in instead.');
+                    setIsLoading(false);
+                    return;
+                }
+
+                setError(authError.message);
+                setIsLoading(false);
+                return;
+            }
+
+            // 2. Supabase signup succeeded - now sync to local database
+            if (authData.user) {
+                const syncResult = await syncUserFromSupabase(authData.user.id, {
+                    email,
+                    full_name: fullName,
+                    phone,
+                    role: 'client'
+                });
+
+                if (!syncResult.success) {
+                    // Log the error but still try to redirect - user exists in Supabase
+                    console.error('Failed to sync user to local database, but Supabase user created');
+                }
+
+                // 3. Redirect to home page regardless - user is created in Supabase
                 router.push('/');
                 router.refresh();
+            } else {
+                setError('Registration failed. Please try again.');
             }
         } catch (err) {
             console.error('Registration failed:', err);
